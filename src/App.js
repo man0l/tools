@@ -1,5 +1,6 @@
-import logo from './logo.svg';
+import React from 'react';
 import './App.css';
+import UploadPDF from './components/UploadPDF';
 
 function App() {
   return (
@@ -16,8 +17,7 @@ function App() {
       </header>
       <main className="flex-grow container mx-auto p-4">
         <h1 className="text-3xl font-bold mb-4">Welcome to the App</h1>
-        <p className="mb-4">This is a basic layout using Tailwind CSS.</p>
-        <p>Edit <code>src/App.js</code> and save to reload.</p>
+        <UploadPDF />
       </main>
       <footer className="bg-gray-800 text-white p-4">
         <div className="container mx-auto text-center">
