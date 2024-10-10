@@ -9,8 +9,8 @@ function App() {
           <img src={logo} className="h-10" alt="logo" />
           <nav>
             <a href="#" className="text-blue-400 hover:text-blue-300 mx-2">Home</a>
-            <a href="#" className="text-blue-400 hover:text-blue-300 mx-2">About</a>
-            <a href="#" className="text-blue-400 hover:text-blue-300 mx-2">Contact</a>
+            <a href="#" className="text-blue-400 hover:text-blue-300 mx-2">Upload PDF</a>
+            <a href="#" className="text-blue-400 hover:text-blue-300 mx-2">Book Contents</a>
           </nav>
         </div>
       </header>
