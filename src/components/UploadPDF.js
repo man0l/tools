@@ -16,7 +16,7 @@ function UploadPDF() {
   const [numTokens, setNumTokens] = useState(0);
   const [completionTokens, setCompletionTokens] = useState(0);
   const [promptTokens, setPromptTokens] = useState(0);
-  const [maxTokens, setMaxTokens] = useState(16384); // Updated max tokens
+  const [maxTokens, setMaxTokens] = useState(16384);
   const [systemPrompt, setSystemPrompt] = useState(localStorage.getItem('systemPrompt') || 'Act as a translator and translate the given text.');
   const [userPrompt, setUserPrompt] = useState(localStorage.getItem('userPrompt') || 'Translate the text and dont be lazy, translate the whole given text.');
   const [loading, setLoading] = useState(false);
@@ -129,7 +129,7 @@ function UploadPDF() {
       }
       debounceTimeout.current = setTimeout(() => {
         fetchExtractedText(file, value);
-      }, 500); // 500ms debounce time
+      }, 500);
     }
   };
 
@@ -207,7 +207,7 @@ function UploadPDF() {
         },
       });
       if (response.ok) {
-        setAlert({ message: 'File uploaded successfully', type: 'success' });
+        setAlert({ message: 'File uploaded successfully. Proceed to the next step.', type: 'success' });
       } else {
         const errorResult = await response.json();
         setAlert({ message: errorResult.error || 'File upload failed', type: 'error' });
@@ -231,7 +231,8 @@ function UploadPDF() {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col items-center">
+    <form onSubmit={handleSubmit} className="flex flex-col items-center max-w-3xl mx-auto p-4 bg-white shadow-md rounded-lg">
+      <h1 className="text-3xl font-bold mb-6 text-center text-blue-600">Welcome to the App</h1>
       <div
         onClick={handleClick}
         onDrop={handleDrop}
@@ -255,7 +256,7 @@ function UploadPDF() {
       )}
       {pageCount && (
         <div className="mb-4 w-full">
-          <label htmlFor="pageRange" className="block text-center mb-2">
+          <label htmlFor="pageRange" className="block text-center mb-2 font-semibold">
             Select page range: {range[0]} - {range[1]}
           </label>
           <Slider
@@ -274,26 +275,26 @@ function UploadPDF() {
         </div>
       )}
       <div className="mb-4 w-full">
-        <label htmlFor="systemPrompt" className="block text-center mb-2">
+        <label htmlFor="systemPrompt" className="block text-center mb-2 font-semibold">
           System Prompt
         </label>
         <textarea
           id="systemPrompt"
           value={systemPrompt}
           onChange={handleSystemPromptChange}
-          className="w-full p-2 border rounded"
+          className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
           required
         />
       </div>
       <div className="mb-4 w-full">
-        <label htmlFor="userPrompt" className="block text-center mb-2">
+        <label htmlFor="userPrompt" className="block text-center mb-2 font-semibold">
           User Prompt
         </label>
         <textarea
           id="userPrompt"
           value={userPrompt}
           onChange={handleUserPromptChange}
-          className="w-full p-2 border rounded"
+          className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
           required
         />
       </div>
@@ -302,12 +303,12 @@ function UploadPDF() {
           <div className="bg-blue-500 h-2.5 rounded-full" style={{ width: `${uploadProgress}%` }}></div>
         </div>
       )}
-      <button type="submit" className="bg-blue-500 text-white px-4 py-2 rounded mb-2">Upload PDF</button>
-      {pageCount && (
-        <button type="button" onClick={handleTestTranslation} className="bg-green-500 text-white px-4 py-2 rounded mb-2" disabled={numTokens > maxTokens / 2}>
+      <div className="flex justify-between w-full mb-4">
+        <button type="submit" className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors w-1/2 mr-2">Upload PDF</button>
+        <button type="button" onClick={handleTestTranslation} className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 transition-colors w-1/2 ml-2" disabled={numTokens > maxTokens / 2}>
           {loading ? 'Translating...' : 'Test Translation'}
         </button>
-      )}
+      </div>
       {alert.message && (
         <div className={`mt-4 p-2 w-full text-center rounded ${alert.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
           {alert.message}
@@ -331,7 +332,7 @@ function UploadPDF() {
               <p>{translatedText}</p>
             </div>
           )}
-          <button onClick={handleClearTranslation} className="ml-2 text-red-500">
+          <button onClick={handleClearTranslation} className="ml-2 text-red-500 hover:text-red-700 transition-colors">
             <FaTrash />
           </button>
         </div>
