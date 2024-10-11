@@ -8,6 +8,10 @@ from PIL import Image
 import pytesseract
 from dotenv import load_dotenv
 import tiktoken
+from backend.translator import Translator
+from backend.file_uploader import FileUploader
+from backend.text_extractor import TextExtractor
+from backend.tokenizer import Tokenizer
 
 load_dotenv()  # Load environment variables from .env
 
