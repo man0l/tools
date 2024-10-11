@@ -7,7 +7,7 @@ import Slider from 'rc-slider';
 import { FaTrash } from 'react-icons/fa';
 
 function UploadPDF() {
-  const { file, setFile, handleFileChange, handleDrop, handleDragOver, handleDragLeave, handleClick, inputRef } = useFileHandler();
+  const { file, setFile, handleFileChange, handleDrop, handleDragOver, handleDragLeave, handleClick, inputRef, dragActive } = useFileHandler();
   const { alert, setAlert } = useAlert();
   const {
     pageCount,
