@@ -1,11 +1,7 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import os
-import io
 import openai
-import fitz  # PyMuPDF
-from PIL import Image
-import pytesseract
 from dotenv import load_dotenv
 import tiktoken
 from backend.translator import Translator
