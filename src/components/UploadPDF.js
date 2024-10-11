@@ -1,5 +1,4 @@
-import React from 'react';
-import { useFileHandler } from '../hooks/useFileHandler';
+import React, { useRef, useState } from 'react';
 import { useAlert } from '../hooks/useAlert';
 import { usePDFProcessing } from '../hooks/usePDFProcessing';
 import 'rc-slider/assets/index.css';
@@ -7,9 +6,10 @@ import Slider from 'rc-slider';
 import { FaTrash } from 'react-icons/fa';
 
 function UploadPDF() {
-  const { file, setFile, handleFileChange, handleDrop, handleDragOver, handleDragLeave, handleClick, inputRef, dragActive } = useFileHandler();
   const { alert, setAlert } = useAlert();
   const {
+    file,
+    setFile,
     pageCount,
     range,
     setRange,
@@ -23,6 +23,7 @@ function UploadPDF() {
     userPrompt,
     loading,
     extracting,
+    handleFileChange,
     handleRangeChange,
     handleTestTranslation,
     handleClearTranslation,
@@ -30,13 +31,34 @@ function UploadPDF() {
     handleSystemPromptChange,
     handleUserPromptChange,
     uploadProgress
-  } = usePDFProcessing(file, setFile, setAlert);
+  } = usePDFProcessing(setAlert);
+
+  const inputRef = useRef(null);
+  const [dragActive, setDragActive] = useState(false);
+
+  const handleDrop = (event) => {
+    event.preventDefault();
+    setDragActive(false);
+    const files = event.dataTransfer.files;
+    if (files && files[0]) {
+      handleFileChange({ target: { files } });
+    }
+  };
+
+  const handleDragOver = (event) => {
+    event.preventDefault();
+    setDragActive(true);
+  };
+
+  const handleDragLeave = () => {
+    setDragActive(false);
+  };
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col items-center max-w-3xl mx-auto p-4 bg-white shadow-md rounded-lg">
       <h1 className="text-3xl font-bold mb-6 text-center text-blue-600">Welcome to the App</h1>
       <div
-        onClick={handleClick}
+        onClick={() => inputRef.current.click()}
         onDrop={handleDrop}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}

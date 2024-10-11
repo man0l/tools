@@ -3,14 +3,25 @@ import './App.css';
 import Header from './components/Header';
 import MainContent from './components/MainContent';
 import Footer from './components/Footer';
+import FileList from './components/FileList';
+import UploadPDF from './components/UploadPDF';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 
 function App() {
   return (
-    <div className="flex flex-col min-h-screen bg-cream">
-      <Header />
-      <MainContent />
-      <Footer />
-    </div>
+    <Router>
+      <div className="flex flex-col min-h-screen bg-cream">
+        <Header />
+        <div className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 1444:px-10">
+          <Routes>
+            <Route path="/" element={<MainContent />} />
+            <Route path="/upload-pdf" element={<UploadPDF />} />
+            <Route path="/file-list" element={<FileList />} />
+          </Routes>
+        </div>
+        <Footer />
+      </div>
+    </Router>
   );
 }
 

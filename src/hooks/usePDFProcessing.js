@@ -1,7 +1,8 @@
 import { useState, useRef } from 'react';
 import { PDFDocument } from 'pdf-lib';
 
-export const usePDFProcessing = (file, setFile, setAlert) => {
+export const usePDFProcessing = (setAlert) => {
+  const [file, setFile] = useState(null);
   const [pageCount, setPageCount] = useState(null);
   const [range, setRange] = useState([1, 1]);
   const [extractedText, setExtractedText] = useState('');
@@ -18,6 +19,7 @@ export const usePDFProcessing = (file, setFile, setAlert) => {
   const [uploadProgress, setUploadProgress] = useState(0);
 
   const fetchExtractedText = async (file, range) => {
+    console.log('Fetching extracted text for range:', range);
     setExtracting(true);
     const formData = new FormData();
     formData.append('pdf', file);
@@ -50,7 +52,27 @@ export const usePDFProcessing = (file, setFile, setAlert) => {
     }
   };
 
+  const handleFileChange = async (event) => {
+    const selectedFile = event.target.files[0];
+    if (selectedFile) {
+      setFile(selectedFile);
+      try {
+        const pdfDoc = await PDFDocument.load(await selectedFile.arrayBuffer());
+        const totalPages = pdfDoc.getPageCount();
+        setPageCount(totalPages);
+        setRange([1, totalPages]);
+        setAlert({ message: `File loaded with ${totalPages} pages.`, type: 'success' });
+        // Trigger text extraction after setting the file and page count
+        fetchExtractedText(selectedFile, [1, totalPages]);
+      } catch (error) {
+        console.error('Error loading PDF:', error);
+        setAlert({ message: 'Error loading PDF', type: 'error' });
+      }
+    }
+  };
+
   const handleRangeChange = (value) => {
+    console.log('Range changed to:', value);
     setRange(value);
     if (file) {
       if (debounceTimeout.current) {
@@ -160,6 +182,8 @@ export const usePDFProcessing = (file, setFile, setAlert) => {
   };
 
   return {
+    file,
+    setFile,
     pageCount,
     range,
     setRange,
@@ -173,6 +197,7 @@ export const usePDFProcessing = (file, setFile, setAlert) => {
     userPrompt,
     loading,
     extracting,
+    handleFileChange,
     handleRangeChange,
     handleTestTranslation,
     handleClearTranslation,

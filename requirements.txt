@@ -10,3 +10,4 @@ httpx==0.24.0
 pytesseract==0.3.10
 Pillow==9.4.0
 tiktoken==0.8.0
+Flask-SQLAlchemy==3.0.5
