@@ -3,7 +3,6 @@ import { PDFDocument } from 'pdf-lib';
 import 'rc-slider/assets/index.css';
 import Slider from 'rc-slider';
 import { FaTrash } from 'react-icons/fa';
-import { Tiktoken, get_encoding } from 'tiktoken';
 
 function UploadPDF() {
   const [file, setFile] = useState(null);
@@ -14,9 +13,14 @@ function UploadPDF() {
   const [range, setRange] = useState([1, 1]);
   const [extractedText, setExtractedText] = useState('');
   const [translatedText, setTranslatedText] = useState('');
-  const [tokenCount, setTokenCount] = useState(0);
+  const [numTokens, setNumTokens] = useState(0);
+  const [completionTokens, setCompletionTokens] = useState(0);
+  const [promptTokens, setPromptTokens] = useState(0);
+  const [maxTokens, setMaxTokens] = useState(16384); // Example max tokens
   const [loading, setLoading] = useState(false);
+  const [extracting, setExtracting] = useState(false);
   const inputRef = useRef(null);
+  const debounceTimeout = useRef(null);
 
   useEffect(() => {
     if (alert.message) {
@@ -35,8 +39,9 @@ function UploadPDF() {
         const pdfDoc = await PDFDocument.load(e.target.result);
         const totalPages = pdfDoc.getPageCount();
         setPageCount(totalPages);
-        setRange([1, Math.min(Math.ceil(totalPages * 0.1), 20)]);
-        await fetchExtractedText(selectedFile, [1, Math.min(Math.ceil(totalPages * 0.1), 20)]);
+        const initialRange = Math.max(1, Math.ceil(totalPages * 0.02));
+        setRange([1, initialRange]);
+        await fetchExtractedText(selectedFile, [1, initialRange]);
       };
       reader.readAsArrayBuffer(selectedFile);
     } else {
@@ -57,8 +62,9 @@ function UploadPDF() {
         const pdfDoc = await PDFDocument.load(e.target.result);
         const totalPages = pdfDoc.getPageCount();
         setPageCount(totalPages);
-        setRange([1, Math.min(Math.ceil(totalPages * 0.1), 20)]);
-        await fetchExtractedText(droppedFile, [1, Math.min(Math.ceil(totalPages * 0.1), 20)]);
+        const initialRange = Math.max(1, Math.ceil(totalPages * 0.02));
+        setRange([1, initialRange]);
+        await fetchExtractedText(droppedFile, [1, initialRange]);
       };
       reader.readAsArrayBuffer(droppedFile);
     } else {
@@ -81,6 +87,7 @@ function UploadPDF() {
   };
 
   const fetchExtractedText = async (file, range) => {
+    setExtracting(true);
     const formData = new FormData();
     formData.append('pdf', file);
     formData.append('startPage', range[0]);
@@ -94,13 +101,12 @@ function UploadPDF() {
       if (response.ok) {
         const result = await response.json();
         setExtractedText(result.extractedText);
-
-        // Calculate token count
-        const encoder = get_encoding('o200k_base');
-        const tokens = encoder.encode(result.extractedText);
-        setTokenCount(tokens.length);
-
+        setNumTokens(result.numTokens);
         setAlert({ message: 'Text extracted successfully', type: 'success' });
+
+        if (result.numTokens > maxTokens) {
+          setAlert({ message: `Extracted tokens exceed the maximum allowed (${maxTokens}). Translation not allowed.`, type: 'error' });
+        }
       } else {
         const errorResult = await response.json();
         setAlert({ message: errorResult.error || 'Failed to extract text', type: 'error' });
@@ -108,19 +114,31 @@ function UploadPDF() {
     } catch (error) {
       console.error('Error extracting text:', error);
       setAlert({ message: 'Error extracting text', type: 'error' });
+    } finally {
+      setExtracting(false);
     }
   };
 
-  const handleRangeChange = async (value) => {
+  const handleRangeChange = (value) => {
     setRange(value);
     if (file) {
-      await fetchExtractedText(file, value);
+      if (debounceTimeout.current) {
+        clearTimeout(debounceTimeout.current);
+      }
+      debounceTimeout.current = setTimeout(() => {
+        fetchExtractedText(file, value);
+      }, 500); // 500ms debounce time
     }
   };
 
   const handleTestTranslation = async () => {
     if (!file) {
       setAlert({ message: 'No file selected', type: 'error' });
+      return;
+    }
+
+    if (numTokens > maxTokens) {
+      setAlert({ message: `Extracted tokens exceed the maximum allowed (${maxTokens}). Translation not allowed.`, type: 'error' });
       return;
     }
 
@@ -138,6 +156,8 @@ function UploadPDF() {
       if (response.ok) {
         const result = await response.json();
         setTranslatedText(result.translation);
+        setCompletionTokens(result.completionTokens);
+        setPromptTokens(result.promptTokens);
         setAlert({ message: 'Translation successful', type: 'success' });
       } else {
         const errorResult = await response.json();
@@ -154,7 +174,9 @@ function UploadPDF() {
   const handleClearTranslation = () => {
     setExtractedText('');
     setTranslatedText('');
-    setTokenCount(0);
+    setNumTokens(0);
+    setCompletionTokens(0);
+    setPromptTokens(0);
   };
 
   const handleSubmit = async (event) => {
@@ -187,8 +209,6 @@ function UploadPDF() {
     }
   };
 
-  const maxPages = pageCount ? Math.min(Math.ceil(pageCount * 0.1), 20) : 10;
-
   return (
     <form onSubmit={handleSubmit} className="flex flex-col items-center">
       <div
@@ -220,14 +240,15 @@ function UploadPDF() {
           <Slider
             range
             min={1}
-            max={maxPages}
+            max={pageCount}
             value={range}
             onChange={handleRangeChange}
             className="w-full"
+            disabled={loading || extracting}
           />
           <div className="flex justify-between text-sm">
             <span>1</span>
-            <span>{maxPages}</span>
+            <span>{pageCount}</span>
           </div>
         </div>
       )}
@@ -238,7 +259,7 @@ function UploadPDF() {
       )}
       <button type="submit" className="bg-blue-500 text-white px-4 py-2 rounded mb-2">Upload PDF</button>
       {pageCount && (
-        <button type="button" onClick={handleTestTranslation} className="bg-green-500 text-white px-4 py-2 rounded mb-2">
+        <button type="button" onClick={handleTestTranslation} className="bg-green-500 text-white px-4 py-2 rounded mb-2" disabled={numTokens > maxTokens}>
           {loading ? 'Translating...' : 'Test Translation'}
         </button>
       )}
@@ -252,13 +273,16 @@ function UploadPDF() {
           {extractedText && (
             <div className="w-1/2 p-2 border-r">
               <h3 className="text-lg font-bold mb-2">Extracted Text</h3>
+              <p><strong>Token Count:</strong> {numTokens} / {maxTokens}</p>
               <p>{extractedText}</p>
-              <p><strong>Token Count:</strong> {tokenCount}</p>
             </div>
           )}
           {translatedText && (
             <div className="w-1/2 p-2">
               <h3 className="text-lg font-bold mb-2">Translated Text</h3>
+              <p><strong>Completion Tokens:</strong> {completionTokens}</p>
+              <p><strong>Prompt Tokens:</strong> {promptTokens}</p>
+              <p><strong>Token Usage:</strong> {completionTokens + promptTokens} / {maxTokens}</p>
               <p>{translatedText}</p>
             </div>
           )}

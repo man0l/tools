@@ -7,6 +7,7 @@ import fitz  # PyMuPDF
 from PIL import Image
 import pytesseract
 from dotenv import load_dotenv
+import tiktoken
 
 load_dotenv()  # Load environment variables from .env
 
@@ -22,19 +23,20 @@ class Translator:
     def __init__(self, api_key):
         self.api_key = api_key
         openai.api_key = self.api_key
+        self.max_tokens = 16384
 
     def translate(self, text):
         """Translate text to Bulgarian using OpenAI API."""
         try:
             response = openai.chat.completions.create(
-                model="gpt-4",
+                model="gpt-4o", #https://platform.openai.com/docs/models/gpt-4o
                 messages=[
                     {"role": "system", "content": "Translate the given text into Bulgarian language."},
-                    {"role": "user", "content": f"Text for translation: {text}"},
+                    {"role": "user", "content": f"Text for translation: {text}. Translate the text and dont be lazy, translate the whole given text."},
                 ]
             )
             translation = response.choices[0].message.content
-            return translation
+            return {"translation": translation, "usage": response.usage}
         except Exception as e:
             return str(e)
 
@@ -75,9 +77,28 @@ class TextExtractor:
         except Exception as e:
             raise RuntimeError(f'Failed to process the PDF: {str(e)}')
 
+class Tokenizer:
+    def __init__(self, model="gpt-4o"):
+        self.model = model
+        self.encoding = tiktoken.encoding_for_model(model)
+        self.max_tokens = 16384
+
+    def tokenize(self, text):
+        """Tokenize the input text using the specified model's encoding."""
+        return self.encoding.encode(text)
+
+    def detokenize(self, tokens):
+        """Detokenize the input tokens back to text using the specified model's encoding."""
+        return self.encoding.decode(tokens)
+
+    def count_tokens(self, text):
+        """Count the number of tokens in the input text."""
+        return len(self.tokenize(text))
+
 translator = Translator(api_key=os.getenv('OPENAI_API_KEY'))
 file_uploader = FileUploader(upload_folder=app.config['UPLOAD_FOLDER'])
 text_extractor = TextExtractor()
+tokenizer = Tokenizer(model="gpt-4o")
 
 @app.route('/upload', methods=['POST'])
 def upload_file():
@@ -114,7 +135,7 @@ def test_translation():
         extracted_text = text_extractor.extract_text(filepath, start_page, end_page)
         if extracted_text:
             translation = translator.translate(extracted_text)
-            return jsonify({'translation': translation, 'extractedText': extracted_text}), 200
+            return jsonify({'translation': translation['translation'], 'completionTokens': translation['usage'].completion_tokens, 'promptTokens': translation['usage'].prompt_tokens, 'extractedText': extracted_text}), 200
         else:
             return jsonify({'error': 'No text found in the PDF'}), 400
     except RuntimeError as e:
@@ -137,8 +158,9 @@ def extract_text():
 
     try:
         extracted_text = text_extractor.extract_text(filepath, start_page, end_page)
+        tokenized_text = tokenizer.tokenize(extracted_text)
         if extracted_text:
-            return jsonify({'extractedText': extracted_text}), 200
+            return jsonify({'extractedText': extracted_text, 'numTokens': len(tokenized_text), 'maxTokens': tokenizer.max_tokens }), 200
         else:
             return jsonify({'error': 'No text found in the PDF'}), 400
     except RuntimeError as e:
