@@ -1,3 +1,31 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+:root {
+  --dark-gray: #50514F;
+  --light-gray: #CBD4C2;
+  --dark-blue: #0D6EFD;
+  --cream: #FFFCFF;
+  --beige: #C3B299;
+}
+
+.bg-dark-gray {
+  background-color: var(--dark-gray);
+}
+
+.text-light-gray {
+  color: var(--light-gray);
+}
+
+.text-dark-blue {
+  color: var(--dark-blue);
+}
+
+.bg-cream {
+  background-color: var(--cream);
+}
+
+.text-light-blue {
+  color: var(--dark-blue);
+}
