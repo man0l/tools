@@ -1,5 +1,7 @@
 import React from 'react';
-import { useFileHandler, useAlert, usePDFProcessing } from '../hooks';
+import { useFileHandler } from '../hooks/useFileHandler';
+import { useAlert } from '../hooks/useAlert';
+import { usePDFProcessing } from '../hooks/usePDFProcessing';
 import 'rc-slider/assets/index.css';
 import Slider from 'rc-slider';
 import { FaTrash } from 'react-icons/fa';
