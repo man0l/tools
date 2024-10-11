@@ -25,14 +25,15 @@ class Translator:
         openai.api_key = self.api_key
         self.max_tokens = 16384
 
-    def translate(self, text):
+    def translate(self, text, system, user):
         """Translate text to Bulgarian using OpenAI API."""
+        user_prompt = f"{user} {text}" if user else f"Text for translation: {text}. Translate the text and dont be lazy, translate the whole given text."
         try:
             response = openai.chat.completions.create(
                 model="gpt-4o", #https://platform.openai.com/docs/models/gpt-4o
                 messages=[
-                    {"role": "system", "content": "Translate the given text into Bulgarian language."},
-                    {"role": "user", "content": f"Text for translation: {text}. Translate the text and dont be lazy, translate the whole given text."},
+                    {"role": "system", "content": system or "Translate the given text into Bulgarian language."},
+                    {"role": "user", "content": user_prompt},
                 ]
             )
             translation = response.choices[0].message.content
@@ -128,13 +129,15 @@ def test_translation():
 
     start_page = int(request.form.get('startPage', 1)) - 1  # Convert to 0-based index
     end_page = int(request.form.get('endPage', start_page + 1)) - 1  # Convert to 0-based index
+    system_prompt = request.form.get('systemPrompt', None)
+    user_prompt = request.form.get('userPrompt', None)
     
     filepath = file_uploader.save_file(file)
 
     try:
         extracted_text = text_extractor.extract_text(filepath, start_page, end_page)
         if extracted_text:
-            translation = translator.translate(extracted_text)
+            translation = translator.translate(extracted_text, system_prompt, user_prompt)
             return jsonify({'translation': translation['translation'], 'completionTokens': translation['usage'].completion_tokens, 'promptTokens': translation['usage'].prompt_tokens, 'extractedText': extracted_text}), 200
         else:
             return jsonify({'error': 'No text found in the PDF'}), 400

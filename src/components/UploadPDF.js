@@ -16,7 +16,9 @@ function UploadPDF() {
   const [numTokens, setNumTokens] = useState(0);
   const [completionTokens, setCompletionTokens] = useState(0);
   const [promptTokens, setPromptTokens] = useState(0);
-  const [maxTokens, setMaxTokens] = useState(16384); // Example max tokens
+  const [maxTokens, setMaxTokens] = useState(16384); // Updated max tokens
+  const [systemPrompt, setSystemPrompt] = useState(localStorage.getItem('systemPrompt') || 'Act as a translator and translate the given text.');
+  const [userPrompt, setUserPrompt] = useState(localStorage.getItem('userPrompt') || 'Translate the text and dont be lazy, translate the whole given text.');
   const [loading, setLoading] = useState(false);
   const [extracting, setExtracting] = useState(false);
   const inputRef = useRef(null);
@@ -104,8 +106,8 @@ function UploadPDF() {
         setNumTokens(result.numTokens);
         setAlert({ message: 'Text extracted successfully', type: 'success' });
 
-        if (result.numTokens > maxTokens) {
-          setAlert({ message: `Extracted tokens exceed the maximum allowed (${maxTokens}). Translation not allowed.`, type: 'error' });
+        if (result.numTokens > maxTokens / 2) {
+          setAlert({ message: `Extracted tokens exceed half of the maximum allowed (${maxTokens / 2}). Translation not allowed.`, type: 'error' });
         }
       } else {
         const errorResult = await response.json();
@@ -137,8 +139,13 @@ function UploadPDF() {
       return;
     }
 
-    if (numTokens > maxTokens) {
-      setAlert({ message: `Extracted tokens exceed the maximum allowed (${maxTokens}). Translation not allowed.`, type: 'error' });
+    if (!systemPrompt || !userPrompt) {
+      setAlert({ message: 'System prompt and user prompt are required.', type: 'error' });
+      return;
+    }
+
+    if (numTokens > maxTokens / 2) {
+      setAlert({ message: `Extracted tokens exceed half of the maximum allowed (${maxTokens / 2}). Translation not allowed.`, type: 'error' });
       return;
     }
 
@@ -147,6 +154,8 @@ function UploadPDF() {
     formData.append('pdf', file);
     formData.append('startPage', range[0]);
     formData.append('endPage', range[1]);
+    formData.append('systemPrompt', systemPrompt);
+    formData.append('userPrompt', userPrompt);
 
     try {
       const response = await fetch('http://localhost:5000/test-translation', {
@@ -209,6 +218,18 @@ function UploadPDF() {
     }
   };
 
+  const handleSystemPromptChange = (e) => {
+    const value = e.target.value;
+    setSystemPrompt(value);
+    localStorage.setItem('systemPrompt', value);
+  };
+
+  const handleUserPromptChange = (e) => {
+    const value = e.target.value;
+    setUserPrompt(value);
+    localStorage.setItem('userPrompt', value);
+  };
+
   return (
     <form onSubmit={handleSubmit} className="flex flex-col items-center">
       <div
@@ -252,6 +273,30 @@ function UploadPDF() {
           </div>
         </div>
       )}
+      <div className="mb-4 w-full">
+        <label htmlFor="systemPrompt" className="block text-center mb-2">
+          System Prompt
+        </label>
+        <textarea
+          id="systemPrompt"
+          value={systemPrompt}
+          onChange={handleSystemPromptChange}
+          className="w-full p-2 border rounded"
+          required
+        />
+      </div>
+      <div className="mb-4 w-full">
+        <label htmlFor="userPrompt" className="block text-center mb-2">
+          User Prompt
+        </label>
+        <textarea
+          id="userPrompt"
+          value={userPrompt}
+          onChange={handleUserPromptChange}
+          className="w-full p-2 border rounded"
+          required
+        />
+      </div>
       {uploadProgress > 0 && (
         <div className="w-full bg-gray-200 rounded-full h-2.5 mb-4">
           <div className="bg-blue-500 h-2.5 rounded-full" style={{ width: `${uploadProgress}%` }}></div>
@@ -259,7 +304,7 @@ function UploadPDF() {
       )}
       <button type="submit" className="bg-blue-500 text-white px-4 py-2 rounded mb-2">Upload PDF</button>
       {pageCount && (
-        <button type="button" onClick={handleTestTranslation} className="bg-green-500 text-white px-4 py-2 rounded mb-2" disabled={numTokens > maxTokens}>
+        <button type="button" onClick={handleTestTranslation} className="bg-green-500 text-white px-4 py-2 rounded mb-2" disabled={numTokens > maxTokens / 2}>
           {loading ? 'Translating...' : 'Test Translation'}
         </button>
       )}
