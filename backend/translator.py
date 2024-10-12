@@ -1,18 +1,15 @@
-import openai
-import os
+from backend.openai_base import OpenAIBase
 
-class Translator:
+class Translator(OpenAIBase):
     def __init__(self, api_key):
-        self.api_key = api_key
-        openai.api_key = self.api_key
-        self.max_tokens = 16384
+        super().__init__(api_key)
 
     def translate(self, text, system, user):
         """Translate text to Bulgarian using OpenAI API."""
         user_prompt = f"{user} {text}" if user else f"Text for translation: {text}. Translate the text and dont be lazy, translate the whole given text."
         try:
-            response = openai.chat.completions.create(
-                model="gpt-4o", #https://platform.openai.com/docs/models/gpt-4o
+            response = self.create_completion(
+                model="gpt-4o",  # https://platform.openai.com/docs/models/gpt-4o
                 messages=[
                     {"role": "system", "content": system or "Translate the given text into Bulgarian language."},
                     {"role": "user", "content": user_prompt},

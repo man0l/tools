@@ -147,6 +147,10 @@ export const usePDFProcessing = (setAlert) => {
     formData.append('pdf', file);
     formData.append('startPage', range[0]);
     formData.append('endPage', range[1]);
+    formData.append('page_count', pageCount);
+    formData.append('page_range', `${range[0]}-${range[1]}`);
+    formData.append('system_prompt', systemPrompt);
+    formData.append('user_prompt', userPrompt);
 
     try {
       const response = await fetch('http://localhost:5000/upload', {

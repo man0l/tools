@@ -26,6 +26,7 @@ export const useFileOperations = () => {
 
   const updateFile = async (file) => {
     try {
+      console.log('Updating file:', file);
       const response = await fetch(`${API_BASE_URL}/files/${file.id}`, {
         method: 'PUT',
         headers: {
@@ -41,14 +42,27 @@ export const useFileOperations = () => {
       if (!response.ok) {
         throw new Error('Failed to update file');
       }
+      console.log('File updated successfully');
     } catch (err) {
+      console.error('Error updating file:', err);
       setError('There was an error updating the file!');
     }
   };
 
-  const deleteFile = (index) => {
-    const updatedFiles = files.filter((_, i) => i !== index);
-    setFiles(updatedFiles);
+  const deleteFile = async (index) => {
+    const fileToDelete = files[index];
+    try {
+      const response = await fetch(`${API_BASE_URL}/files/${fileToDelete.id}`, {
+        method: 'DELETE',
+      });
+      if (!response.ok) {
+        throw new Error('Failed to delete file');
+      }
+      const updatedFiles = files.filter((_, i) => i !== index);
+      setFiles(updatedFiles);
+    } catch (err) {
+      setError('There was an error deleting the file!');
+    }
   };
 
   return {

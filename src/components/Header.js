@@ -12,6 +12,7 @@ function Header() {
           <Link to="/upload-pdf" className="text-light-blue hover:text-light-gray">Upload PDF</Link>
           <Link to="/book-contents" className="text-light-blue hover:text-light-gray">Book Contents</Link>
           <Link to="/file-list" className="text-light-blue hover:text-light-gray">File List</Link>
+          <Link to="/translation-list" className="text-light-blue hover:text-light-gray">Translation List</Link>
         </nav>
       </div>
     </header>
