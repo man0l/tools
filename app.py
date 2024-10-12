@@ -135,7 +135,6 @@ def extract_text():
 @app.route('/edit-text/<int:translation_id>', methods=['POST'])
 def edit_text_endpoint(translation_id):
     """Endpoint to edit text for a specific translation record."""
-    data = request.json
     return edit_handler.edit_text(translation_id)
 
 if __name__ == '__main__':

@@ -101,13 +101,14 @@ const TranslationList = () => {
 
   const handleEditAction = (index, field) => {
     const translationId = translations[index].id;
-    const userPrompt = translations[index][field];
+    toast.info('Editing in progress...');
+
     fetch(`http://localhost:5000/edit-text/${translationId}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ user_prompt: userPrompt }),
+      body: JSON.stringify({ }),
     })
       .then(response => response.json())
       .then(data => {
