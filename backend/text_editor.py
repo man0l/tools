@@ -18,4 +18,4 @@ class TextEditor(OpenAIBase):
             edited_text = response.choices[0].message.content
             return {"edited_text": edited_text, "usage": response.usage}
         except Exception as e:
-            return str(e)
+            return {"error": str(e), "edited_text": None}

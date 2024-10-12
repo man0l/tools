@@ -1,4 +1,4 @@
-from flask import jsonify
+from flask import jsonify, request
 from backend.models.translation_model import TranslationRecord
 from backend.models.file_model import db, File
 
@@ -33,7 +33,13 @@ class TranslationHandler:
         return jsonify({'message': f'Translation initiated successfully with {loops} records'}), 200
 
     def get_translations(self, file_id):
-        translations = TranslationRecord.query.filter_by(file_id=file_id).all()
+        page = request.args.get('page', 1, type=int)
+        limit = request.args.get('limit', 10, type=int)
+        offset = (page - 1) * limit
+
+        translations = TranslationRecord.query.filter_by(file_id=file_id).offset(offset).limit(limit).all()
+        total_translations = TranslationRecord.query.filter_by(file_id=file_id).count()
+
         translation_list = [{
             'id': t.id,
             'page_range': t.page_range,
@@ -41,7 +47,11 @@ class TranslationHandler:
             'translated_text': t.translated_text,
             'edited_text': t.edited_text
         } for t in translations]
-        return jsonify(translation_list), 200
+
+        return jsonify({
+            'translations': translation_list,
+            'total': total_translations
+        }), 200
 
     def perform_extraction(self, translation_id):
         translation_record = db.session.get(TranslationRecord, translation_id)
@@ -81,3 +91,26 @@ class TranslationHandler:
         db.session.commit()
 
         return jsonify({'message': 'Text edited successfully', 'edited_text': translation_record.edited_text}), 200
+
+    def update_translation(self, translation_id, data):
+        field = None
+        value = None
+
+        # Check which field is present in the payload
+        for key in ['extracted_text', 'translated_text', 'edited_text']:
+            if key in data:
+                field = key
+                value = data[key]
+                break
+
+        if not field:
+            return {'error': 'No valid field provided'}, 400
+
+        translation_record = db.session.get(TranslationRecord, translation_id)
+        if not translation_record:
+            return {'error': 'Translation record not found'}, 404
+
+        setattr(translation_record, field, value)
+        db.session.commit()
+
+        return {'message': 'Translation updated successfully', field: value}, 200

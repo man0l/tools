@@ -39,7 +39,13 @@ class FileHandler:
             return jsonify({'error': 'Invalid file type'}), 400
 
     def get_files(self):
-        files = File.query.all()
+        page = request.args.get('page', 1, type=int)
+        limit = request.args.get('limit', 10, type=int)
+        # pagination = db.paginate(db.select(File).order_by(File.id), page=page, per_page=limit)
+        pagination = File.query.order_by(File.id).paginate(page=page, per_page=limit)
+        files = pagination.items
+        total = pagination.total
+
         file_list = [{
             'id': f.id,
             'filename': f.filename,
@@ -49,7 +55,7 @@ class FileHandler:
             'system_prompt': f.system_prompt,
             'user_prompt': f.user_prompt
         } for f in files]
-        return jsonify(file_list), 200
+        return jsonify({'files': file_list, 'total': total}), 200
 
     def update_file_by_id(self, file_id):
         file_record = db.session.get(File, file_id)

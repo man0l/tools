@@ -1,0 +1,11 @@
+{
+    "sqltools.connections": [
+        {
+            "previewLimit": 50,
+            "driver": "SQLite",
+            "database": "${workspaceFolder:books-simo}/instance/storage.db",
+            "name": "Storage"
+        }
+    ],
+    "sqltools.useNodeRuntime": true
+}

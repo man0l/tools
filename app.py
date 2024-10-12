@@ -78,9 +78,13 @@ def translate_text(translation_id):
     return translation_handler.translate_text(translation_id)
 
 @app.route('/edit/<int:translation_id>', methods=['POST'])
-def edit_text(translation_id):
+def edit_text(translation_id):    
+    return edit_handler.edit_text(translation_id)
+
+@app.route('/update-translation/<int:translation_id>', methods=['POST'])
+def update_translation(translation_id):
     data = request.json
-    return edit_handler.edit_text(translation_id, data.get('edited_text'))
+    return translation_handler.update_translation(translation_id, data)
 
 @app.route('/test-translation', methods=['POST'])
 def test_translation():
@@ -131,11 +135,6 @@ def extract_text():
             return jsonify({'error': 'No text found in the PDF'}), 400
     except RuntimeError as e:
         return jsonify({'error': str(e)}), 500
-
-@app.route('/edit-text/<int:translation_id>', methods=['POST'])
-def edit_text_endpoint(translation_id):
-    """Endpoint to edit text for a specific translation record."""
-    return edit_handler.edit_text(translation_id)
 
 if __name__ == '__main__':
     app.run(debug=True)

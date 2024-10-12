@@ -1,12 +1,65 @@
-.collapsible-content {
-  overflow: hidden;
-  transition: max-height 0.3s ease-out;
+.translation-list {
+  margin-top: 2rem;
+  padding: 1rem;
+  background-color: #f9f9f9;
+  border-radius: 8px;
 }
 
-.collapsed {
-  max-height: 0;
+.translation-list select {
+  margin-bottom: 1rem;
+  padding: 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
 }
 
-.expanded {
-  max-height: 500px; /* Adjust as needed */
+.translation-list table {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: #fff;
+}
+
+.translation-list th, .translation-list td {
+  padding: 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid #ddd;
+  min-height: 70px; /* Increased minimum height for table rows */
+}
+
+.translation-list th {
+  background-color: #f1f1f1;
+}
+
+.translation-list tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
+.translation-list tr:hover {
+  background-color: #f1f1f1;
+}
+
+.translation-list .actions button {
+  margin-right: 0.5rem;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  padding: 0.5rem;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.translation-list .actions button:hover {
+  background-color: #0056b3;
+}
+
+.modal {
+  max-width: 600px;
+  margin: auto;
+  padding: 2rem;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.overlay {
+  background-color: rgba(0, 0, 0, 0.5);
 }

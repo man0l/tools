@@ -1,18 +1,15 @@
-import React, { useRef, useState } from 'react';
-import { useAlert } from '../hooks/useAlert';
-import { usePDFProcessing } from '../hooks/usePDFProcessing';
+import React from 'react';
 import 'rc-slider/assets/index.css';
 import Slider from 'rc-slider';
 import { FaTrash } from 'react-icons/fa';
+import { useUploadPDFData } from '../hooks/useUploadPDFData';
 
 function UploadPDF() {
-  const { alert, setAlert } = useAlert();
   const {
+    alert,
     file,
-    setFile,
     pageCount,
     range,
-    setRange,
     extractedText,
     translatedText,
     numTokens,
@@ -30,29 +27,14 @@ function UploadPDF() {
     handleSubmit,
     handleSystemPromptChange,
     handleUserPromptChange,
-    uploadProgress
-  } = usePDFProcessing(setAlert);
-
-  const inputRef = useRef(null);
-  const [dragActive, setDragActive] = useState(false);
-
-  const handleDrop = (event) => {
-    event.preventDefault();
-    setDragActive(false);
-    const files = event.dataTransfer.files;
-    if (files && files[0]) {
-      handleFileChange({ target: { files } });
-    }
-  };
-
-  const handleDragOver = (event) => {
-    event.preventDefault();
-    setDragActive(true);
-  };
-
-  const handleDragLeave = () => {
-    setDragActive(false);
-  };
+    uploadProgress,
+    inputRef,
+    dragActive,
+    setDragActive,
+    handleDrop,
+    handleDragOver,
+    handleDragLeave
+  } = useUploadPDFData();
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col items-center max-w-3xl mx-auto p-4 bg-white shadow-md rounded-lg">

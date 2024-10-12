@@ -1,26 +1,40 @@
 import React, { useState } from 'react';
-import { useFileOperations } from '../hooks/useFileOperations';
-import { FaSave, FaTrash, FaLanguage } from 'react-icons/fa';
+import ReactPaginate from 'react-paginate';
+import { FaSave, FaTrash, FaLanguage, FaChevronDown, FaChevronUp } from 'react-icons/fa';
 import { confirmAlert } from 'react-confirm-alert';
 import 'react-confirm-alert/src/react-confirm-alert.css';
 import Modal from 'react-modal';
 import './FileList.css';
-import { useAlert } from '../hooks/useAlert';
+import { Collapse } from 'react-collapse';
+import { useFileListData } from '../hooks/useFileListData';
 
 Modal.setAppElement('#root');
 
 const FileList = () => {
-  const { files, loading, error, updateFile, deleteFile } = useFileOperations();
-  const { alert, setAlert } = useAlert();
+  const {
+    files,
+    totalFiles,
+    loading,
+    error,
+    alert,
+    setAlert,
+    currentPage,
+    setCurrentPage,
+    itemsPerPage,
+    debouncedUpdateFile,
+    deleteFile
+  } = useFileListData();
+
   const [modalIsOpen, setModalIsOpen] = useState(false);
   const [currentField, setCurrentField] = useState('');
   const [currentValue, setCurrentValue] = useState('');
   const [currentIndex, setCurrentIndex] = useState(null);
+  const [expandedRows, setExpandedRows] = useState({});
 
   const handleEdit = (index, field, value) => {
     const updatedFiles = [...files];
     updatedFiles[index][field] = value;
-    updateFile(updatedFiles[index]);
+    debouncedUpdateFile(updatedFiles[index]);
   };
 
   const handleDelete = (index) => {
@@ -41,7 +55,6 @@ const FileList = () => {
   };
 
   const handleTranslate = (file) => {
-    // Call the init_translation endpoint
     fetch(`http://localhost:5000/init_translation/${file.id}`, {
       method: 'POST',
     })
@@ -73,9 +86,20 @@ const FileList = () => {
     closeModal();
   };
 
+  const toggleRow = (index) => {
+    setExpandedRows(prevState => ({
+      ...prevState,
+      [index]: !prevState[index]
+    }));
+  };
+
+  const handlePageClick = (data) => {
+    setCurrentPage(data.selected);
+  };
+
   return (
     <div className="file-list mt-8">
-      {loading && <p>Loading files...</p>}
+      {loading && <div className="spinner">Loading files...</div>}
       {error && <p className="text-red-500">{error}</p>}
       {alert.message && (
         <div className={`alert ${alert.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'} p-2 mb-4 rounded`}>
@@ -96,48 +120,69 @@ const FileList = () => {
         </thead>
         <tbody>
           {files.map((file, index) => (
-            <tr key={index}>
-              <td className="border px-4 py-2">{file.filename}</td>
-              <td className="border px-4 py-2">{file.file_path}</td>
-              <td className="border px-4 py-2">
-                <input
-                  type="number"
-                  value={file.page_count || ''}
-                  onChange={(e) => handleEdit(index, 'page_count', e.target.value)}
-                />
-              </td>
-              <td className="border px-4 py-2">
-                <input
-                  type="text"
-                  value={file.page_range || ''}
-                  onChange={(e) => handleEdit(index, 'page_range', e.target.value)}
-                />
-              </td>
-              <td className="border px-4 py-2">
-                <span onClick={() => openModal(index, 'system_prompt', file.system_prompt || '')}>
+            <React.Fragment key={file.id}>
+              <tr onClick={() => toggleRow(index)}>
+                <td className="border px-4 py-2">
+                  {file.filename}
+                  {expandedRows[index] ? <FaChevronUp /> : <FaChevronDown />}
+                </td>
+                <td className="border px-4 py-2">{file.file_path}</td>
+                <td className="border px-4 py-2">
+                  <input
+                    type="text"
+                    value={file.page_count || ''}
+                    onChange={(e) => handleEdit(index, 'page_count', e.target.value)}
+                    onFocus={(e) => e.target.select()}
+                  />
+                </td>
+                <td className="border px-4 py-2">
+                  <input
+                    type="text"
+                    value={file.page_range || ''}
+                    onChange={(e) => handleEdit(index, 'page_range', e.target.value)}
+                  />
+                </td>
+                <td className="border px-4 py-2" onClick={() => openModal(index, 'system_prompt', file.system_prompt || '')}>
                   {file.system_prompt || ''}
-                </span>
-              </td>
-              <td className="border px-4 py-2">
-                <span onClick={() => openModal(index, 'user_prompt', file.user_prompt || '')}>
+                </td>
+                <td className="border px-4 py-2" onClick={() => openModal(index, 'user_prompt', file.user_prompt || '')}>
                   {file.user_prompt || ''}
-                </span>
-              </td>
-              <td className="border px-4 py-2">
-                <button onClick={() => updateFile(file)}>
-                  <FaSave />
-                </button>
-                <button onClick={() => handleDelete(index)}>
-                  <FaTrash />
-                </button>
-                <button onClick={() => handleTranslate(file)}>
-                  <FaLanguage />
-                </button>
-              </td>
-            </tr>
+                </td>
+                <td className="border px-4 py-2">
+                  <button onClick={() => debouncedUpdateFile(file)} className="mr-2"><FaSave /></button>
+                  <button onClick={() => handleDelete(index)} className="mr-2"><FaTrash /></button>
+                  <button onClick={() => handleTranslate(file)}><FaLanguage /></button>
+                </td>
+              </tr>
+              <tr>
+                <td colSpan="7" className="border px-4 py-2">
+                  <Collapse isOpened={expandedRows[index]} initialStyle={{ height: 0, overflow: 'hidden' }}>
+                    <div className="flex">
+                      <div className="w-1/3">
+                        {file.system_prompt}
+                      </div>
+                      <div className="w-1/3">
+                        {file.user_prompt}
+                      </div>
+                    </div>
+                  </Collapse>
+                </td>
+              </tr>
+            </React.Fragment>
           ))}
         </tbody>
       </table>
+      <ReactPaginate
+        previousLabel={'previous'}
+        nextLabel={'next'}
+        breakLabel={'...'}
+        pageCount={Math.ceil(totalFiles / itemsPerPage)}
+        marginPagesDisplayed={2}
+        pageRangeDisplayed={5}
+        onPageChange={handlePageClick}
+        containerClassName={'pagination'}
+        activeClassName={'active'}
+      />
       <Modal
         isOpen={modalIsOpen}
         onRequestClose={closeModal}

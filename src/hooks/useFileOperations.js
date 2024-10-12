@@ -1,24 +1,20 @@
 import { useState, useEffect } from 'react';
 
-const API_BASE_URL = 'http://localhost:5000';
-
 export const useFileOperations = () => {
   const [files, setFiles] = useState([]);
+  const [totalFiles, setTotalFiles] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    fetchFiles();
-  }, []);
-
-  const fetchFiles = async () => {
+  const fetchFiles = async (page = 1, limit = 10) => {
     setLoading(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/files`);
+      const response = await fetch(`http://localhost:5000/files?page=${page}&limit=${limit}`);
       const data = await response.json();
-      setFiles(data);
+      setFiles(data.files);
+      setTotalFiles(data.total);
     } catch (err) {
-      setError('There was an error fetching the files!');
+      setError('Failed to fetch files');
     } finally {
       setLoading(false);
     }
@@ -26,51 +22,38 @@ export const useFileOperations = () => {
 
   const updateFile = async (file) => {
     try {
-      console.log('Updating file:', file);
-      const response = await fetch(`${API_BASE_URL}/files/${file.id}`, {
+      const response = await fetch(`http://localhost:5000/files/${file.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          page_count: file.page_count,
-          page_range: file.page_range,
-          system_prompt: file.system_prompt,
-          user_prompt: file.user_prompt
-        }),
+        body: JSON.stringify(file),
       });
       if (!response.ok) {
         throw new Error('Failed to update file');
       }
-      console.log('File updated successfully');
     } catch (err) {
-      console.error('Error updating file:', err);
-      setError('There was an error updating the file!');
+      setError('Failed to update file');
     }
   };
 
-  const deleteFile = async (index) => {
-    const fileToDelete = files[index];
+  const deleteFile = async (id) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/files/${fileToDelete.id}`, {
+      const response = await fetch(`http://localhost:5000/files/${id}`, {
         method: 'DELETE',
       });
       if (!response.ok) {
         throw new Error('Failed to delete file');
       }
-      const updatedFiles = files.filter((_, i) => i !== index);
-      setFiles(updatedFiles);
+      setFiles((prevFiles) => prevFiles.filter((file) => file.id !== id));
     } catch (err) {
-      setError('There was an error deleting the file!');
+      setError('Failed to delete file');
     }
   };
 
-  return {
-    files,
-    loading,
-    error,
-    fetchFiles,
-    updateFile,
-    deleteFile,
-  };
+  useEffect(() => {
+    fetchFiles();
+  }, []);
+
+  return { files, totalFiles, loading, error, fetchFiles, updateFile, deleteFile };
 };
