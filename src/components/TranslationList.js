@@ -20,6 +20,7 @@ const TranslationList = () => {
     currentPage,
     setCurrentPage,
     itemsPerPage,
+    setItemsPerPage,
     setTranslations
   } = useTranslationData();
 
@@ -33,6 +34,11 @@ const TranslationList = () => {
     const fileId = event.target.value;
     setSelectedFile(fileId);
     setCurrentPage(0); // Reset to first page when file changes
+  };
+
+  const handleItemsPerPageChange = (event) => {
+    setItemsPerPage(Number(event.target.value));
+    setCurrentPage(0); // Reset to first page when items per page changes
   };
 
   const handleEdit = (index, field, value) => {
@@ -152,12 +158,19 @@ const TranslationList = () => {
   return (
     <div className="translation-list mt-8">
       <ToastContainer />
-      <select onChange={handleFileChange} value={selectedFile || ''} className="mb-4 p-2 border rounded">
-        <option value="" disabled>Select a file</option>
-        {files.map(file => (
-          <option key={file.id} value={file.id}>{file.filename}</option>
-        ))}
-      </select>
+      <div className="flex mb-4">
+        <select onChange={handleFileChange} value={selectedFile || ''} className="p-2 border rounded mr-4">
+          <option value="" disabled>Select a file</option>
+          {files.map(file => (
+            <option key={file.id} value={file.id}>{file.filename}</option>
+          ))}
+        </select>
+        <select onChange={handleItemsPerPageChange} value={itemsPerPage} className="p-2 border rounded">
+          <option value={10}>10 per page</option>
+          <option value={20}>20 per page</option>
+          <option value={50}>50 per page</option>
+        </select>
+      </div>
       {selectedFile && (
         <div style={{ minHeight: '400px' }}> {/* Set a minimum height for consistency */}
           <table className="min-w-full bg-white">

@@ -7,7 +7,7 @@ export const useTranslationData = () => {
   const [totalTranslations, setTotalTranslations] = useState(0);
   const [selectedFile, setSelectedFile] = useState(null);
   const [currentPage, setCurrentPage] = useState(0);
-  const itemsPerPage = 2;
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   useEffect(() => {
     fetch('http://localhost:5000/files')
@@ -26,7 +26,7 @@ export const useTranslationData = () => {
         })
         .catch(() => toast.error('Failed to fetch translations'));
     }
-  }, [selectedFile, currentPage]);
+  }, [selectedFile, currentPage, itemsPerPage]);
 
   return {
     files,
@@ -37,6 +37,7 @@ export const useTranslationData = () => {
     currentPage,
     setCurrentPage,
     itemsPerPage,
+    setItemsPerPage,
     setTranslations
   };
 };
