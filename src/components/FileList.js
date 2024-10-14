@@ -44,7 +44,7 @@ const FileList = () => {
       buttons: [
         {
           label: 'Yes',
-          onClick: () => deleteFile(index)
+          onClick: () => deleteFile(files[index].id) // Pass the correct file ID
         },
         {
           label: 'No',

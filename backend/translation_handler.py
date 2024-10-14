@@ -8,6 +8,7 @@ class TranslationHandler:
         self.text_extractor = text_extractor
 
     def init_translation(self, file_id):
+        print(f"Initializing translation for file_id: {file_id}")
         file_record = db.session.get(File, file_id)
         if not file_record:
             return jsonify({'error': 'File not found'}), 404

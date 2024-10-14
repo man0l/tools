@@ -11,4 +11,4 @@ class TranslationRecord(db.Model):
     date_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     edited_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
-    file = db.relationship('File', backref=db.backref('translation_records', lazy=True))
+    file = db.relationship('File', backref=db.backref('translation_records', lazy=True, cascade="all, delete-orphan"))

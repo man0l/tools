@@ -1,5 +1,6 @@
 from flask import request, jsonify
 from backend.models.file_model import db, File
+from backend.models.translation_model import TranslationRecord
 
 class FileHandler:
     def __init__(self, file_uploader):
@@ -41,7 +42,6 @@ class FileHandler:
     def get_files(self):
         page = request.args.get('page', 1, type=int)
         limit = request.args.get('limit', 10, type=int)
-        # pagination = db.paginate(db.select(File).order_by(File.id), page=page, per_page=limit)
         pagination = File.query.order_by(File.id).paginate(page=page, per_page=limit)
         files = pagination.items
         total = pagination.total
@@ -76,6 +76,9 @@ class FileHandler:
         if not file_record:
             return jsonify({'error': 'File not found'}), 404
 
+        # Manually delete associated translation records
+        TranslationRecord.query.filter_by(file_id=file_id).delete()
+
         db.session.delete(file_record)
         db.session.commit()
-        return jsonify({'message': 'File deleted successfully'}), 200
+        return jsonify({'message': 'File and associated translations deleted successfully'}), 200

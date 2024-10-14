@@ -125,7 +125,7 @@ function UploadPDF() {
           {extractedText && (
             <div className="w-1/2 p-2 border-r">
               <h3 className="text-lg font-bold mb-2">Extracted Text</h3>
-              <p><strong>Token Count:</strong> {numTokens} / {maxTokens}</p>
+              <p><strong>Token Count:</strong> {numTokens} / {maxTokens/2}</p>
               <p>{extractedText}</p>
             </div>
           )}

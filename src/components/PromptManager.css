@@ -1,0 +1,61 @@
+.prompt-manager {
+  padding: 20px;
+  background-color: #f9f9f9;
+}
+
+.new-prompt {
+  margin-bottom: 20px;
+}
+
+.new-prompt input {
+  margin-right: 10px;
+  padding: 5px;
+}
+
+.new-prompt button {
+  padding: 5px 10px;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  cursor: pointer;
+}
+
+.new-prompt button:hover {
+  background-color: #45a049;
+}
+
+.prompt-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.prompt-table th, .prompt-table td {
+  border: 1px solid #ddd;
+  padding: 8px;
+}
+
+.prompt-table th {
+  background-color: #f2f2f2;
+  text-align: left;
+}
+
+.prompt-table tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
+.prompt-table tr:hover {
+  background-color: #ddd;
+}
+
+.prompt-table button {
+  padding: 5px 10px;
+  margin-right: 5px;
+  background-color: #008CBA;
+  color: white;
+  border: none;
+  cursor: pointer;
+}
+
+.prompt-table button:hover {
+  background-color: #007bb5;
+}
