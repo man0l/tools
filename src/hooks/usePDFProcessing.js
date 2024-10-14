@@ -60,10 +60,10 @@ export const usePDFProcessing = (setAlert) => {
         const pdfDoc = await PDFDocument.load(await selectedFile.arrayBuffer());
         const totalPages = pdfDoc.getPageCount();
         setPageCount(totalPages);
-        setRange([1, totalPages]);
+        setRange([1, Math.min(2, totalPages)]); // Default to 2 pages if possible
         setAlert({ message: `File loaded with ${totalPages} pages.`, type: 'success' });
         // Trigger text extraction after setting the file and page count
-        fetchExtractedText(selectedFile, [1, totalPages]);
+        fetchExtractedText(selectedFile, [1, Math.min(2, totalPages)]);
       } catch (error) {
         console.error('Error loading PDF:', error);
         setAlert({ message: 'Error loading PDF', type: 'error' });

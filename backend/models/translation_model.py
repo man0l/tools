@@ -1,5 +1,6 @@
 from datetime import datetime
-from backend.models.file_model import db, File
+from backend.models.database import db
+from backend.models.file_model import File
 
 class TranslationRecord(db.Model):
     id = db.Column(db.Integer, primary_key=True)

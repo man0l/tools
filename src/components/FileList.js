@@ -113,8 +113,6 @@ const FileList = () => {
             <th className="py-2">File Path</th>
             <th className="py-2">Page Count</th>
             <th className="py-2">Page Range</th>
-            <th className="py-2">System Prompt</th>
-            <th className="py-2">User Prompt</th>
             <th className="py-2">Actions</th>
           </tr>
         </thead>
@@ -142,12 +140,6 @@ const FileList = () => {
                     onChange={(e) => handleEdit(index, 'page_range', e.target.value)}
                   />
                 </td>
-                <td className="border px-4 py-2" onClick={() => openModal(index, 'system_prompt', file.system_prompt || '')}>
-                  {file.system_prompt || ''}
-                </td>
-                <td className="border px-4 py-2" onClick={() => openModal(index, 'user_prompt', file.user_prompt || '')}>
-                  {file.user_prompt || ''}
-                </td>
                 <td className="border px-4 py-2">
                   <button onClick={() => debouncedUpdateFile(file)} className="mr-2"><FaSave /></button>
                   <button onClick={() => handleDelete(index)} className="mr-2"><FaTrash /></button>
@@ -155,7 +147,7 @@ const FileList = () => {
                 </td>
               </tr>
               <tr>
-                <td colSpan="7" className="border px-4 py-2">
+                <td colSpan="5" className="border px-4 py-2">
                   <Collapse isOpened={expandedRows[index]} initialStyle={{ height: 0, overflow: 'hidden' }}>
                     <div className="flex">
                       <div className="w-1/3">

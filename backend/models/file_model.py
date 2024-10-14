@@ -1,6 +1,4 @@
-from flask_sqlalchemy import SQLAlchemy
-
-db = SQLAlchemy()
+from backend.models.database import db
 
 class File(db.Model):
     id = db.Column(db.Integer, primary_key=True)

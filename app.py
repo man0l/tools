@@ -1,4 +1,4 @@
-from flask import Flask, request
+from flask import Flask, jsonify, request
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
@@ -9,7 +9,8 @@ from backend.translator import Translator
 from backend.file_uploader import FileUploader
 from backend.text_extractor import TextExtractor
 from backend.tokenizer import Tokenizer
-from backend.models.file_model import db, File
+from backend.models.database import db
+from backend.models.file_model import File
 from backend.models.translation_model import TranslationRecord
 from backend.file_handler import FileHandler
 from backend.translation_handler import TranslationHandler

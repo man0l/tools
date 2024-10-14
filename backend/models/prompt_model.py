@@ -1,5 +1,5 @@
 from datetime import datetime
-from backend.models.file_model import db
+from backend.models.database import db
 
 class Prompt(db.Model):
     id = db.Column(db.Integer, primary_key=True)
