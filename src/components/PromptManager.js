@@ -1,43 +1,57 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import Modal from 'react-modal';
 import './PromptManager.css';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { FaTrashAlt, FaPlus } from 'react-icons/fa';
+import ReactPaginate from 'react-paginate';
+import { format } from 'date-fns';
+import { confirmAlert } from 'react-confirm-alert';
+import 'react-confirm-alert/src/react-confirm-alert.css';
+import usePromptManager from '../hooks/usePromptManager';
 
 Modal.setAppElement('#root');
 
 const PromptManager = () => {
-  const [prompts, setPrompts] = useState([]);
-  const [newPrompt, setNewPrompt] = useState({ system_message: '', user_message: '', prompt_type: '' });
-  const [editingPrompt, setEditingPrompt] = useState(null);
-  const [modalIsOpen, setModalIsOpen] = useState(false);
-
-  useEffect(() => {
-    fetchPrompts();
-  }, []);
-
-  const fetchPrompts = async () => {
-    try {
-      const response = await fetch('/prompts');
-      const data = await response.json();
-      setPrompts(data);
-    } catch (error) {
-      toast.error('Failed to fetch prompts');
-    }
-  };
+  const {
+    prompts,
+    setPrompts,
+    newPrompt,
+    setNewPrompt,
+    editingPrompt,
+    setEditingPrompt,
+    modalIsOpen,
+    setModalIsOpen,
+    createModalIsOpen,
+    setCreateModalIsOpen,
+    currentPage,
+    setCurrentPage,
+    itemsPerPage,
+    setItemsPerPage,
+    totalPrompts,
+    setTotalPrompts,
+    editField,
+    setEditField,
+    fetchPrompts
+  } = usePromptManager();
 
   const handleCreatePrompt = async () => {
+    if (!newPrompt.system_message || !newPrompt.user_message || !newPrompt.prompt_type) {
+      toast.error('All fields are required');
+      return;
+    }
     try {
-      const response = await fetch('/prompts', {
+      const response = await fetch('http://localhost:5000/prompts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newPrompt),
       });
-      if (response.ok) {
-        toast.success('Prompt created successfully');
-        setNewPrompt({ system_message: '', user_message: '', prompt_type: '' });
+      const data = await response.json();
+      if (response.ok && data.message === "Prompt created successfully") {
+        toast.success(data.message);
         fetchPrompts();
-        closeModal();
+        setNewPrompt({ system_message: '', user_message: '', prompt_type: 'translation' });
+        setCreateModalIsOpen(false);
       } else {
         toast.error('Failed to create prompt');
       }
@@ -46,16 +60,15 @@ const PromptManager = () => {
     }
   };
 
-  const handleUpdatePrompt = async (id) => {
+  const handleUpdatePrompt = async (id, field, value) => {
     try {
-      const response = await fetch(`/prompts/${id}`, {
+      const response = await fetch(`http://localhost:5000/prompts/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(editingPrompt),
+        body: JSON.stringify({ [field]: value }),
       });
       if (response.ok) {
         toast.success('Prompt updated successfully');
-        setEditingPrompt(null);
         fetchPrompts();
         closeModal();
       } else {
@@ -66,87 +79,180 @@ const PromptManager = () => {
     }
   };
 
-  const handleDeletePrompt = async (id) => {
-    try {
-      const response = await fetch(`/prompts/${id}`, { method: 'DELETE' });
-      if (response.ok) {
-        toast.success('Prompt deleted successfully');
-        fetchPrompts();
-      } else {
-        toast.error('Failed to delete prompt');
-      }
-    } catch (error) {
-      toast.error('Failed to delete prompt');
-    }
+  const handleDeletePrompt = (id) => {
+    confirmAlert({
+      title: 'Confirm to delete',
+      message: 'Are you sure you want to delete this prompt?',
+      buttons: [
+        {
+          label: 'Yes',
+          onClick: async () => {
+            try {
+              const response = await fetch(`http://localhost:5000/prompts/${id}`, { method: 'DELETE' });
+              if (response.ok) {
+                toast.success('Prompt deleted successfully');
+                fetchPrompts();
+              } else {
+                toast.error('Failed to delete prompt');
+              }
+            } catch (error) {
+              toast.error('Failed to delete prompt');
+            }
+          }
+        },
+        {
+          label: 'No',
+          onClick: () => {}
+        }
+      ]
+    });
   };
 
-  const openModal = (prompt = null) => {
+  const openModal = (prompt, field) => {
     setEditingPrompt(prompt);
+    setEditField(field);
     setModalIsOpen(true);
   };
 
   const closeModal = () => {
     setModalIsOpen(false);
     setEditingPrompt(null);
+    setEditField('');
+  };
+
+  const openCreateModal = () => {
+    setCreateModalIsOpen(true);
+  };
+
+  const closeCreateModal = () => {
+    setCreateModalIsOpen(false);
+    setNewPrompt({ system_message: '', user_message: '', prompt_type: 'translation' });
+  };
+
+  const handlePageClick = (data) => {
+    setCurrentPage(data.selected);
+  };
+
+  const handleItemsPerPageChange = (event) => {
+    setItemsPerPage(Number(event.target.value));
+    setCurrentPage(0);
+  };
+
+  const formatDate = (date) => {
+    try {
+      return format(new Date(date), 'PPpp');
+    } catch {
+      return 'N/A';
+    }
   };
 
   return (
-    <div className="prompt-manager">
+    <div className="prompt-manager mt-8 p-4 bg-gray-100 rounded-lg">
       <ToastContainer />
-      <h2>Prompt Manager</h2>
-      <button onClick={() => openModal()} className="bg-blue-500 text-white px-4 py-2 rounded">Add New Prompt</button>
-      <table className="prompt-table">
+      <h2 className="text-2xl font-bold mb-4">Prompt Manager</h2>
+      <div className="flex mb-4 justify-between items-center">
+        <div className="flex items-center space-x-4">
+          <select onChange={handleItemsPerPageChange} value={itemsPerPage} className="p-2 border rounded">
+            <option value={5}>5 per page</option>
+            <option value={10}>10 per page</option>
+            <option value={20}>20 per page</option>
+          </select>
+          <button onClick={openCreateModal} className="bg-blue-500 text-white px-4 py-2 rounded flex items-center">
+            <FaPlus className="mr-2" /> Add New Prompt
+          </button>
+        </div>
+      </div>
+      <table className="min-w-full bg-white">
         <thead>
           <tr>
-            <th>System Message</th>
-            <th>User Message</th>
-            <th>Prompt Type</th>
-            <th>Actions</th>
+            <th className="border-b p-2 text-left">System Message</th>
+            <th className="border-b p-2 text-left">User Message</th>
+            <th className="border-b p-2 text-left">Prompt Type</th>
+            <th className="border-b p-2 text-left">Created At</th>
+            <th className="border-b p-2 text-left">Updated At</th>
+            <th className="border-b p-2 text-left">Actions</th>
           </tr>
         </thead>
         <tbody>
           {prompts.map((prompt) => (
             <tr key={prompt.id}>
-              <td>{prompt.system_message}</td>
-              <td>{prompt.user_message}</td>
-              <td>{prompt.prompt_type}</td>
-              <td>
-                <button onClick={() => openModal(prompt)}>Edit</button>
-                <button onClick={() => handleDeletePrompt(prompt.id)}>Delete</button>
+              <td onClick={() => openModal(prompt, 'system_message')} className="p-2">{prompt.system_message}</td>
+              <td onClick={() => openModal(prompt, 'user_message')} className="p-2">{prompt.user_message}</td>
+              <td className="p-2">{prompt.prompt_type}</td>
+              <td className="p-2">{formatDate(prompt.created_at)}</td>
+              <td className="p-2">{formatDate(prompt.updated_at)}</td>
+              <td className="actions p-2">
+                <button onClick={() => handleDeletePrompt(prompt.id)} className="bg-white p-1 rounded"><FaTrashAlt /></button>
               </td>
             </tr>
           ))}
         </tbody>
       </table>
+      <ReactPaginate
+        previousLabel={'previous'}
+        nextLabel={'next'}
+        breakLabel={'...'}
+        pageCount={Math.ceil(totalPrompts / itemsPerPage)}
+        marginPagesDisplayed={2}
+        pageRangeDisplayed={5}
+        onPageChange={handlePageClick}
+        containerClassName={'pagination mt-4'}
+        activeClassName={'active'}
+      />
       <Modal
         isOpen={modalIsOpen}
         onRequestClose={closeModal}
-        contentLabel="Prompt Form"
+        contentLabel="Edit Prompt"
         className="modal"
         overlayClassName="overlay"
       >
-        <h2>{editingPrompt ? 'Edit Prompt' : 'Add New Prompt'}</h2>
-        <input
-          type="text"
-          placeholder="System Message"
-          value={editingPrompt ? editingPrompt.system_message : newPrompt.system_message}
-          onChange={(e) => editingPrompt ? setEditingPrompt({ ...editingPrompt, system_message: e.target.value }) : setNewPrompt({ ...newPrompt, system_message: e.target.value })}
-        />
-        <input
-          type="text"
-          placeholder="User Message"
-          value={editingPrompt ? editingPrompt.user_message : newPrompt.user_message}
-          onChange={(e) => editingPrompt ? setEditingPrompt({ ...editingPrompt, user_message: e.target.value }) : setNewPrompt({ ...newPrompt, user_message: e.target.value })}
-        />
-        <input
-          type="text"
-          placeholder="Prompt Type"
-          value={editingPrompt ? editingPrompt.prompt_type : newPrompt.prompt_type}
-          onChange={(e) => editingPrompt ? setEditingPrompt({ ...editingPrompt, prompt_type: e.target.value }) : setNewPrompt({ ...newPrompt, prompt_type: e.target.value })}
+        <h2>Edit {editField.replace('_', ' ')}</h2>
+        <textarea
+          value={editingPrompt ? editingPrompt[editField] : ''}
+          onChange={(e) => setEditingPrompt({ ...editingPrompt, [editField]: e.target.value })}
+          rows={5}
+          className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
         <div className="flex justify-end mt-4">
-          <button onClick={editingPrompt ? () => handleUpdatePrompt(editingPrompt.id) : handleCreatePrompt} className="bg-blue-500 text-white px-4 py-2 rounded mr-2">Save</button>
+          <button onClick={() => handleUpdatePrompt(editingPrompt.id, editField, editingPrompt[editField])} className="bg-blue-500 text-white px-4 py-2 rounded mr-2">Save</button>
           <button onClick={closeModal} className="bg-gray-500 text-white px-4 py-2 rounded">Cancel</button>
+        </div>
+      </Modal>
+      <Modal
+        isOpen={createModalIsOpen}
+        onRequestClose={closeCreateModal}
+        contentLabel="Create New Prompt"
+        className="modal"
+        overlayClassName="overlay"
+      >
+        <h2 className="text-xl font-bold mb-4">Create New Prompt</h2>
+        <div className="space-y-4">
+          <textarea
+            placeholder="System Message"
+            value={newPrompt.system_message}
+            onChange={(e) => setNewPrompt({ ...newPrompt, system_message: e.target.value })}
+            className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+            rows={3}
+          />
+          <textarea
+            placeholder="User Message"
+            value={newPrompt.user_message}
+            onChange={(e) => setNewPrompt({ ...newPrompt, user_message: e.target.value })}
+            className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+            rows={3}
+          />
+          <select
+            value={newPrompt.prompt_type}
+            onChange={(e) => setNewPrompt({ ...newPrompt, prompt_type: e.target.value })}
+            className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="translation">Translation</option>
+            <option value="editing">Editing</option>
+          </select>
+        </div>
+        <div className="flex justify-end mt-6">
+          <button onClick={handleCreatePrompt} className="bg-green-500 text-white px-4 py-2 rounded mr-2">Create</button>
+          <button onClick={closeCreateModal} className="bg-gray-500 text-white px-4 py-2 rounded">Cancel</button>
         </div>
       </Modal>
     </div>

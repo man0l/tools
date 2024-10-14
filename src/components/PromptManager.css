@@ -1,61 +1,64 @@
 .prompt-manager {
-  padding: 20px;
+  margin-top: 2rem;
+  padding: 1rem;
   background-color: #f9f9f9;
+  border-radius: 8px;
 }
 
-.new-prompt {
-  margin-bottom: 20px;
+.prompt-manager select {
+  padding: 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
 }
 
-.new-prompt input {
-  margin-right: 10px;
-  padding: 5px;
-}
-
-.new-prompt button {
-  padding: 5px 10px;
-  background-color: #4CAF50;
-  color: white;
-  border: none;
-  cursor: pointer;
-}
-
-.new-prompt button:hover {
-  background-color: #45a049;
-}
-
-.prompt-table {
+.prompt-manager table {
   width: 100%;
   border-collapse: collapse;
+  background-color: #fff;
 }
 
-.prompt-table th, .prompt-table td {
-  border: 1px solid #ddd;
-  padding: 8px;
-}
-
-.prompt-table th {
-  background-color: #f2f2f2;
+.prompt-manager th, .prompt-manager td {
+  padding: 0.75rem;
   text-align: left;
+  border-bottom: 1px solid #ddd;
+  min-height: 70px;
 }
 
-.prompt-table tr:nth-child(even) {
+.prompt-manager th {
+  background-color: #f1f1f1;
+}
+
+.prompt-manager tr:nth-child(even) {
   background-color: #f9f9f9;
 }
 
-.prompt-table tr:hover {
-  background-color: #ddd;
+.prompt-manager tr:hover {
+  background-color: #f1f1f1;
 }
 
-.prompt-table button {
-  padding: 5px 10px;
-  margin-right: 5px;
-  background-color: #008CBA;
-  color: white;
-  border: none;
+.prompt-manager .actions button {
+  margin-right: 0.5rem;
+  background-color: #fff;
+  color: #007bff;
+  border: 1px solid #007bff;
+  padding: 0.5rem;
+  border-radius: 4px;
   cursor: pointer;
 }
 
-.prompt-table button:hover {
-  background-color: #007bb5;
+.prompt-manager .actions button:hover {
+  background-color: #e6e6e6;
+}
+
+.modal {
+  max-width: 600px;
+  margin: auto;
+  padding: 2rem;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.overlay {
+  background-color: rgba(0, 0, 0, 0.5);
 }

@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
@@ -15,6 +15,7 @@ from backend.file_handler import FileHandler
 from backend.translation_handler import TranslationHandler
 from backend.edit_handler import EditHandler
 from backend.text_editor import TextEditor
+from backend.prompt_handler import PromptHandler
 
 load_dotenv()
 
@@ -41,6 +42,7 @@ text_editor = TextEditor(api_key=os.getenv('OPENAI_API_KEY'))
 file_handler = FileHandler(file_uploader)
 translation_handler = TranslationHandler(translator, text_extractor)
 edit_handler = EditHandler(text_editor)
+prompt_handler = PromptHandler()
 
 with app.app_context():
     db.create_all()
@@ -85,7 +87,6 @@ def edit_text(translation_id):
 def update_translation(translation_id):
     data = request.json
     return translation_handler.update_translation(translation_id, data)
-
 @app.route('/test-translation', methods=['POST'])
 def test_translation():
     if 'pdf' not in request.files:
@@ -135,6 +136,23 @@ def extract_text():
             return jsonify({'error': 'No text found in the PDF'}), 400
     except RuntimeError as e:
         return jsonify({'error': str(e)}), 500
+
+
+@app.route('/prompts', methods=['GET'])
+def handle_get_prompts():
+    return prompt_handler.get_prompts()
+
+@app.route('/prompts', methods=['POST'])
+def handle_create_prompt():
+    return prompt_handler.create_prompt()
+
+@app.route('/prompts/<int:prompt_id>', methods=['PUT'])
+def handle_update_prompt(prompt_id):
+    return prompt_handler.update_prompt(prompt_id)
+
+@app.route('/prompts/<int:prompt_id>', methods=['DELETE'])
+def handle_delete_prompt(prompt_id):
+    return prompt_handler.delete_prompt(prompt_id)
 
 if __name__ == '__main__':
     app.run(debug=True)
