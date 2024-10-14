@@ -9,8 +9,7 @@ function Header() {
         <img src={logo} className="h-10" alt="logo" />
         <nav className="flex space-x-4">
           <Link to="/" className="text-blue-300 hover:text-gray-300">Home</Link>
-          <Link to="/upload-pdf" className="text-blue-300 hover:text-gray-300">Upload PDF</Link>
-          <Link to="/book-contents" className="text-blue-300 hover:text-gray-300">Book Contents</Link>
+          <Link to="/upload-pdf" className="text-blue-300 hover:text-gray-300">Upload PDF</Link>          
           <Link to="/file-list" className="text-blue-300 hover:text-gray-300">File List</Link>
           <Link to="/translation-list" className="text-blue-300 hover:text-gray-300">Translation List</Link>
           <Link to="/prompt-manager" className="text-blue-300 hover:text-gray-300">Prompt Manager</Link>
