@@ -35,13 +35,15 @@ const PromptManager = () => {
     fetchPrompts
   } = usePromptManager();
 
+  const backendPort = process.env.REACT_APP_BACKEND_PORT;
+
   const handleCreatePrompt = async () => {
     if (!newPrompt.system_message || !newPrompt.user_message || !newPrompt.prompt_type) {
       toast.error('All fields are required');
       return;
     }
     try {
-      const response = await fetch('http://localhost:5000/prompts', {
+      const response = await fetch(`http://localhost:${backendPort}/prompts`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newPrompt),
@@ -62,7 +64,7 @@ const PromptManager = () => {
 
   const handleUpdatePrompt = async (id, field, value) => {
     try {
-      const response = await fetch(`http://localhost:5000/prompts/${id}`, {
+      const response = await fetch(`http://localhost:${backendPort}/prompts/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ [field]: value }),
@@ -88,7 +90,7 @@ const PromptManager = () => {
           label: 'Yes',
           onClick: async () => {
             try {
-              const response = await fetch(`http://localhost:5000/prompts/${id}`, { method: 'DELETE' });
+              const response = await fetch(`http://localhost:${backendPort}/prompts/${id}`, { method: 'DELETE' });
               if (response.ok) {
                 toast.success('Prompt deleted successfully');
                 fetchPrompts();

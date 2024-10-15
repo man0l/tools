@@ -31,6 +31,8 @@ const FileList = () => {
   const [currentIndex, setCurrentIndex] = useState(null);
   const [expandedRows, setExpandedRows] = useState({});
 
+  const backendPort = process.env.REACT_APP_BACKEND_PORT;
+
   const handleEdit = (index, field, value) => {
     const updatedFiles = [...files];
     updatedFiles[index][field] = value;
@@ -55,7 +57,7 @@ const FileList = () => {
   };
 
   const handleTranslate = (file) => {
-    fetch(`http://localhost:5000/init_translation/${file.id}`, {
+    fetch(`http://localhost:${backendPort}/init_translation/${file.id}`, {
       method: 'POST',
     })
     .then(response => response.json())

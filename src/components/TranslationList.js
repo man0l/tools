@@ -32,6 +32,8 @@ const TranslationList = () => {
   const [selectedRows, setSelectedRows] = useState([]);
   const [bulkAction, setBulkAction] = useState('');
 
+  const backendPort = process.env.REACT_APP_BACKEND_PORT;
+
   const handleFileChange = (event) => {
     const fileId = event.target.value;
     setSelectedFile(fileId);
@@ -120,7 +122,7 @@ const TranslationList = () => {
     const updatedTranslations = [...translations];
     updatedTranslations[index][field] = value;
     const translationId = translations[index].id;
-    fetch(`http://localhost:5000/update-translation/${translationId}`, {
+    fetch(`http://localhost:${backendPort}/update-translation/${translationId}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -154,7 +156,7 @@ const TranslationList = () => {
 
   const handleExtract = (index) => {
     const translationId = translations[index].id;
-    fetch(`http://localhost:5000/perform_extraction/${translationId}`, {
+    fetch(`http://localhost:${backendPort}/perform_extraction/${translationId}`, {
       method: 'POST',
     })
       .then(response => response.json())
@@ -170,7 +172,7 @@ const TranslationList = () => {
   const handleTranslate = (index) => {
     toast.info('Translation in progress...');
     const translationId = translations[index].id;
-    fetch(`http://localhost:5000/translate/${translationId}`, {
+    fetch(`http://localhost:${backendPort}/translate/${translationId}`, {
       method: 'POST',
     })
       .then(response => {
@@ -195,7 +197,7 @@ const TranslationList = () => {
     console.log('Editing translation with ID:', translationId); // Log the translation ID
     toast.info('Editing in progress...');
 
-    fetch(`http://localhost:5000/edit/${translationId}`, {
+    fetch(`http://localhost:${backendPort}/edit/${translationId}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
