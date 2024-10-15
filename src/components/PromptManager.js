@@ -35,7 +35,7 @@ const PromptManager = () => {
     fetchPrompts
   } = usePromptManager();
 
-  const backendPort = process.env.REACT_APP_BACKEND_PORT;
+  const backendPort = process.env.REACT_APP_BACKEND_PORT || 5000;
 
   const handleCreatePrompt = async () => {
     if (!newPrompt.system_message || !newPrompt.user_message || !newPrompt.prompt_type) {

@@ -12,9 +12,11 @@ const usePromptManager = () => {
   const [totalPrompts, setTotalPrompts] = useState(0);
   const [editField, setEditField] = useState('');
 
+  const backendPort = process.env.REACT_APP_BACKEND_PORT || 5000;
+
   const fetchPrompts = async () => {
     try {
-      const response = await fetch(`http://localhost:5000/prompts?page=${currentPage + 1}&itemsPerPage=${itemsPerPage}`);
+      const response = await fetch(`http://localhost:${backendPort}/prompts?page=${currentPage + 1}&itemsPerPage=${itemsPerPage}`);
       const data = await response.json();
       setPrompts(data.prompts || []);
       setTotalPrompts(data.total || 0);

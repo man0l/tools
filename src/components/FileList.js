@@ -31,7 +31,7 @@ const FileList = () => {
   const [currentIndex, setCurrentIndex] = useState(null);
   const [expandedRows, setExpandedRows] = useState({});
 
-  const backendPort = process.env.REACT_APP_BACKEND_PORT;
+  const backendPort = process.env.REACT_APP_BACKEND_PORT || 5000;
 
   const handleEdit = (index, field, value) => {
     const updatedFiles = [...files];

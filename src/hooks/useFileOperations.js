@@ -6,10 +6,12 @@ export const useFileOperations = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  const backendPort = process.env.REACT_APP_BACKEND_PORT || 5000;
+
   const fetchFiles = async (page = 1, limit = 10) => {
     setLoading(true);
     try {
-      const response = await fetch(`http://localhost:5000/files?page=${page}&limit=${limit}`);
+      const response = await fetch(`http://localhost:${backendPort}/files?page=${page}&limit=${limit}`);
       const data = await response.json();
       setFiles(data.files);
       setTotalFiles(data.total);
@@ -22,7 +24,7 @@ export const useFileOperations = () => {
 
   const updateFile = async (file) => {
     try {
-      const response = await fetch(`http://localhost:5000/files/${file.id}`, {
+      const response = await fetch(`http://localhost:${backendPort}/files/${file.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -39,7 +41,7 @@ export const useFileOperations = () => {
 
   const deleteFile = async (id) => {
     try {
-      const response = await fetch(`http://localhost:5000/files/${id}`, {
+      const response = await fetch(`http://localhost:${backendPort}/files/${id}`, {
         method: 'DELETE',
       });
       if (!response.ok) {

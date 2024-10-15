@@ -32,7 +32,7 @@ const TranslationList = () => {
   const [selectedRows, setSelectedRows] = useState([]);
   const [bulkAction, setBulkAction] = useState('');
 
-  const backendPort = process.env.REACT_APP_BACKEND_PORT;
+  const backendPort = process.env.REACT_APP_BACKEND_PORT || 5000;
 
   const handleFileChange = (event) => {
     const fileId = event.target.value;

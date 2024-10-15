@@ -18,6 +18,8 @@ export const usePDFProcessing = (setAlert) => {
   const debounceTimeout = useRef(null);
   const [uploadProgress, setUploadProgress] = useState(0);
 
+  const backendPort = process.env.REACT_APP_BACKEND_PORT || 5000;
+
   const fetchExtractedText = async (file, range) => {
     console.log('Fetching extracted text for range:', range);
     setExtracting(true);
@@ -27,7 +29,7 @@ export const usePDFProcessing = (setAlert) => {
     formData.append('endPage', range[1]);
 
     try {
-      const response = await fetch('http://localhost:5000/extract-text', {
+      const response = await fetch(`http://localhost:${backendPort}/extract-text`, {
         method: 'POST',
         body: formData,
       });
@@ -109,7 +111,7 @@ export const usePDFProcessing = (setAlert) => {
     formData.append('userPrompt', userPrompt);
 
     try {
-      const response = await fetch('http://localhost:5000/test-translation', {
+      const response = await fetch(`http://localhost:${backendPort}/test-translation`, {
         method: 'POST',
         body: formData,
       });
@@ -153,7 +155,7 @@ export const usePDFProcessing = (setAlert) => {
     formData.append('user_prompt', userPrompt);
 
     try {
-      const response = await fetch('http://localhost:5000/upload', {
+      const response = await fetch(`http://localhost:${backendPort}/upload`, {
         method: 'POST',
         body: formData,
         onUploadProgress: (progressEvent) => {
