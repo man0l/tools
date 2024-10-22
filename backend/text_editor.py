@@ -12,7 +12,7 @@ class TextEditor(OpenAIBase):
             # Fetch the last editing prompt from the database
             last_prompt = db.session.query(Prompt).filter_by(prompt_type='editing').order_by(Prompt.id.desc()).first()
             system_prompt = system_prompt or (last_prompt.system_message if last_prompt else "Act as a proficient editor in Bulgarian language.")
-            user_prompt = f"{user_prompt} {text}" if user_prompt else f"Text for editing: {text}. Please edit the text as needed and dont be lazy."
+            user_prompt = f"{text} {user_prompt}" if user_prompt else f"Text for editing: {text}. Please edit the text as needed and dont be lazy."
 
             response = self.create_completion(
                 model="gpt-4o",
