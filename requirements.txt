@@ -12,3 +12,5 @@ Pillow==9.4.0
 tiktoken==0.8.0
 Flask-SQLAlchemy==3.0.5
 Flask-Migrate
+Flask-JWT-Extended==4.4.4
+passlib==1.7.4

@@ -17,6 +17,10 @@ from backend.translation_handler import TranslationHandler
 from backend.edit_handler import EditHandler
 from backend.text_editor import TextEditor
 from backend.prompt_handler import PromptHandler
+from flask_jwt_extended import JWTManager, jwt_required
+from datetime import timedelta
+from backend.models.user_model import User
+from backend.auth_handler import auth_bp
 
 load_dotenv()
 
@@ -25,9 +29,13 @@ CORS(app, resources={r"/*": {"origins": "*"}})  # Allow all origins for developm
 
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///storage.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY', 'your_jwt_secret_key')
+app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(minutes=15)
+app.config['JWT_REFRESH_TOKEN_EXPIRES'] = timedelta(days=30)
 
 db.init_app(app)
 migrate = Migrate(app, db)
+jwt = JWTManager(app)
 
 app.config['UPLOAD_FOLDER'] = 'uploads'
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
@@ -45,49 +53,62 @@ translation_handler = TranslationHandler(translator, text_extractor)
 edit_handler = EditHandler(text_editor)
 prompt_handler = PromptHandler()
 
+app.register_blueprint(auth_bp, url_prefix='/auth')
+
 with app.app_context():
     db.create_all()
 
 @app.route('/upload', methods=['POST'])
+@jwt_required()
 def upload_file():
     return file_handler.upload_file()
 
 @app.route('/files', methods=['GET'])
+@jwt_required()
 def get_files():
     return file_handler.get_files()
 
 @app.route('/files/<int:file_id>', methods=['PUT'])
+@jwt_required()
 def update_file_by_id(file_id):
     return file_handler.update_file_by_id(file_id)
 
 @app.route('/files/<int:file_id>', methods=['DELETE'])
+@jwt_required()
 def delete_file_by_id(file_id):
     return file_handler.delete_file_by_id(file_id)
 
 @app.route('/init_translation/<int:file_id>', methods=['POST'])
+@jwt_required()
 def init_translation(file_id):
     return translation_handler.init_translation(file_id)
 
 @app.route('/translations/<int:file_id>', methods=['GET'])
+@jwt_required()
 def get_translations(file_id):
     return translation_handler.get_translations(file_id)
 
 @app.route('/perform_extraction/<int:translation_id>', methods=['POST'])
+@jwt_required()
 def perform_extraction(translation_id):
     return translation_handler.perform_extraction(translation_id)
 
 @app.route('/translate/<int:translation_id>', methods=['POST'])
+@jwt_required()
 def translate_text(translation_id):
     return translation_handler.translate_text(translation_id)
 
 @app.route('/edit/<int:translation_id>', methods=['POST'])
+@jwt_required()
 def edit_text(translation_id):    
     return edit_handler.edit_text(translation_id)
 
 @app.route('/update-translation/<int:translation_id>', methods=['POST'])
+@jwt_required()
 def update_translation(translation_id):
     data = request.json
     return translation_handler.update_translation(translation_id, data)
+
 @app.route('/test-translation', methods=['POST'])
 def test_translation():
     if 'pdf' not in request.files:
@@ -140,18 +161,22 @@ def extract_text():
 
 
 @app.route('/prompts', methods=['GET'])
+@jwt_required()
 def handle_get_prompts():
     return prompt_handler.get_prompts()
 
 @app.route('/prompts', methods=['POST'])
+@jwt_required()
 def handle_create_prompt():
     return prompt_handler.create_prompt()
 
 @app.route('/prompts/<int:prompt_id>', methods=['PUT'])
+@jwt_required()
 def handle_update_prompt(prompt_id):
     return prompt_handler.update_prompt(prompt_id)
 
 @app.route('/prompts/<int:prompt_id>', methods=['DELETE'])
+@jwt_required()
 def handle_delete_prompt(prompt_id):
     return prompt_handler.delete_prompt(prompt_id)
 
