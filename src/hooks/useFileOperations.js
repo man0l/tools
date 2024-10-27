@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { api } from '../utils/api';
 
 export const useFileOperations = () => {
   const [files, setFiles] = useState([]);
@@ -6,15 +7,12 @@ export const useFileOperations = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const backendPort = process.env.REACT_APP_BACKEND_PORT || 5000;
-
   const fetchFiles = async (page = 1, limit = 10) => {
     setLoading(true);
     try {
-      const response = await fetch(`http://localhost:${backendPort}/files?page=${page}&limit=${limit}`);
-      const data = await response.json();
-      setFiles(data.files);
-      setTotalFiles(data.total);
+      const response = await api.get(`/files?page=${page}&limit=${limit}`);
+      setFiles(response.data.files);
+      setTotalFiles(response.data.total);
     } catch (err) {
       setError('Failed to fetch files');
     } finally {
@@ -24,13 +22,7 @@ export const useFileOperations = () => {
 
   const updateFile = async (file) => {
     try {
-      const response = await fetch(`http://localhost:${backendPort}/files/${file.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(file),
-      });
+      const response = await api.put(`/files/${file.id}`, file);
       if (!response.ok) {
         throw new Error('Failed to update file');
       }
@@ -41,9 +33,7 @@ export const useFileOperations = () => {
 
   const deleteFile = async (id) => {
     try {
-      const response = await fetch(`http://localhost:${backendPort}/files/${id}`, {
-        method: 'DELETE',
-      });
+      const response = await api.delete(`/files/${id}`);
       if (!response.ok) {
         throw new Error('Failed to delete file');
       }

@@ -12,14 +12,15 @@ from backend.tokenizer import Tokenizer
 from backend.models.database import db
 from backend.models.file_model import File
 from backend.models.translation_model import TranslationRecord
+from backend.models.prompt_model import Prompt
+from backend.models.user_model import User
 from backend.file_handler import FileHandler
 from backend.translation_handler import TranslationHandler
 from backend.edit_handler import EditHandler
 from backend.text_editor import TextEditor
 from backend.prompt_handler import PromptHandler
-from flask_jwt_extended import JWTManager, jwt_required
+from flask_jwt_extended import JWTManager, jwt_required, get_jwt_identity
 from datetime import timedelta
-from backend.models.user_model import User
 from backend.auth_handler import auth_bp
 
 load_dotenv()
@@ -61,55 +62,66 @@ with app.app_context():
 @app.route('/upload', methods=['POST'])
 @jwt_required()
 def upload_file():
-    return file_handler.upload_file()
+    current_user_id = get_jwt_identity()
+    return file_handler.upload_file(current_user_id)
 
 @app.route('/files', methods=['GET'])
 @jwt_required()
 def get_files():
-    return file_handler.get_files()
+    current_user_id = get_jwt_identity()
+    return file_handler.get_files(current_user_id)
 
 @app.route('/files/<int:file_id>', methods=['PUT'])
 @jwt_required()
 def update_file_by_id(file_id):
-    return file_handler.update_file_by_id(file_id)
+    current_user_id = get_jwt_identity()
+    return file_handler.update_file_by_id(file_id, current_user_id)
 
 @app.route('/files/<int:file_id>', methods=['DELETE'])
 @jwt_required()
 def delete_file_by_id(file_id):
-    return file_handler.delete_file_by_id(file_id)
+    current_user_id = get_jwt_identity()
+    return file_handler.delete_file_by_id(file_id, current_user_id)
 
 @app.route('/init_translation/<int:file_id>', methods=['POST'])
 @jwt_required()
 def init_translation(file_id):
-    return translation_handler.init_translation(file_id)
+    current_user_id = get_jwt_identity()
+    return translation_handler.init_translation(file_id, current_user_id)
 
 @app.route('/translations/<int:file_id>', methods=['GET'])
 @jwt_required()
 def get_translations(file_id):
-    return translation_handler.get_translations(file_id)
+    current_user_id = get_jwt_identity()
+    return translation_handler.get_translations(file_id, current_user_id)
 
 @app.route('/perform_extraction/<int:translation_id>', methods=['POST'])
 @jwt_required()
 def perform_extraction(translation_id):
-    return translation_handler.perform_extraction(translation_id)
+    current_user_id = get_jwt_identity()
+    return translation_handler.perform_extraction(translation_id, current_user_id)
 
 @app.route('/translate/<int:translation_id>', methods=['POST'])
 @jwt_required()
 def translate_text(translation_id):
-    return translation_handler.translate_text(translation_id)
+    current_user_id = get_jwt_identity()
+    return translation_handler.translate_text(translation_id, current_user_id)
 
 @app.route('/edit/<int:translation_id>', methods=['POST'])
 @jwt_required()
 def edit_text(translation_id):    
-    return edit_handler.edit_text(translation_id)
+    current_user_id = get_jwt_identity()
+    return edit_handler.edit_text(translation_id, current_user_id)
 
 @app.route('/update-translation/<int:translation_id>', methods=['POST'])
 @jwt_required()
 def update_translation(translation_id):
+    current_user_id = get_jwt_identity()
     data = request.json
-    return translation_handler.update_translation(translation_id, data)
+    return translation_handler.update_translation(translation_id, data, current_user_id)
 
 @app.route('/test-translation', methods=['POST'])
+@jwt_required()
 def test_translation():
     if 'pdf' not in request.files:
         return jsonify({'error': 'No file part'}), 400
@@ -136,6 +148,7 @@ def test_translation():
         return jsonify({'error': str(e)}), 500
     
 @app.route('/extract-text', methods=['POST'])
+@jwt_required()
 def extract_text():
     if 'pdf' not in request.files:
         return jsonify({'error': 'No file part'}), 400
@@ -159,16 +172,17 @@ def extract_text():
     except RuntimeError as e:
         return jsonify({'error': str(e)}), 500
 
-
 @app.route('/prompts', methods=['GET'])
 @jwt_required()
 def handle_get_prompts():
-    return prompt_handler.get_prompts()
+    current_user_id = get_jwt_identity()
+    return prompt_handler.get_prompts(current_user_id)
 
 @app.route('/prompts', methods=['POST'])
 @jwt_required()
 def handle_create_prompt():
-    return prompt_handler.create_prompt()
+    current_user_id = get_jwt_identity()
+    return prompt_handler.create_prompt(current_user_id)
 
 @app.route('/prompts/<int:prompt_id>', methods=['PUT'])
 @jwt_required()
@@ -178,7 +192,10 @@ def handle_update_prompt(prompt_id):
 @app.route('/prompts/<int:prompt_id>', methods=['DELETE'])
 @jwt_required()
 def handle_delete_prompt(prompt_id):
-    return prompt_handler.delete_prompt(prompt_id)
+    current_user_id = get_jwt_identity()
+    return prompt_handler.delete_prompt(prompt_id, current_user_id)
 
 if __name__ == '__main__':
+    with app.app_context():
+        db.create_all()
     app.run(debug=True)

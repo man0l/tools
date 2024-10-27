@@ -7,11 +7,10 @@ class TranslationHandler:
         self.translator = translator
         self.text_extractor = text_extractor
 
-    def init_translation(self, file_id):
-        print(f"Initializing translation for file_id: {file_id}")
+    def init_translation(self, file_id, user_id):
         file_record = db.session.get(File, file_id)
-        if not file_record:
-            return jsonify({'error': 'File not found'}), 404
+        if not file_record or file_record.user_id != user_id:
+            return jsonify({'error': 'File not found or unauthorized'}), 403
 
         existing_records = TranslationRecord.query.filter_by(file_id=file_id).first()
         if existing_records:
@@ -26,20 +25,20 @@ class TranslationHandler:
             start_page = i * delta
             end_page = start_page + delta
             page_range_str = f"{start_page}-{end_page}"
-            new_translation = TranslationRecord(file_id=file_id, page_range=page_range_str)
+            new_translation = TranslationRecord(file_id=file_id, page_range=page_range_str, user_id=user_id)
             db.session.add(new_translation)
 
         db.session.commit()
 
         return jsonify({'message': f'Translation initiated successfully with {loops} records'}), 200
 
-    def get_translations(self, file_id):
-        page = request.args.get('page', 1, type=int)
-        limit = request.args.get('limit', 10, type=int)
-        offset = (page - 1) * limit
+    def get_translations(self, file_id, user_id):
+        file_record = db.session.get(File, file_id)
+        if not file_record or file_record.user_id != user_id:
+            return jsonify({'error': 'File not found or unauthorized'}), 403
 
-        translations = TranslationRecord.query.filter_by(file_id=file_id).offset(offset).limit(limit).all()
-        total_translations = TranslationRecord.query.filter_by(file_id=file_id).count()
+        translations = TranslationRecord.query.filter_by(file_id=file_id, user_id=user_id).all()
+        total_translations = TranslationRecord.query.filter_by(file_id=file_id, user_id=user_id).count()
 
         translation_list = [{
             'id': t.id,
@@ -54,10 +53,10 @@ class TranslationHandler:
             'total': total_translations
         }), 200
 
-    def perform_extraction(self, translation_id):
+    def perform_extraction(self, translation_id, user_id):
         translation_record = db.session.get(TranslationRecord, translation_id)
-        if not translation_record:
-            return jsonify({'error': 'Translation record not found'}), 404
+        if not translation_record or translation_record.user_id != user_id:
+            return jsonify({'error': 'Translation record not found or unauthorized'}), 403
 
         file_record = db.session.get(File, translation_record.file_id)
         start_page, end_page = map(int, translation_record.page_range.split('-'))
@@ -67,10 +66,10 @@ class TranslationHandler:
 
         return jsonify({'message': 'Text extracted successfully', 'extracted_text': extracted_text}), 200
 
-    def translate_text(self, translation_id):
+    def translate_text(self, translation_id, user_id):
         translation_record = db.session.get(TranslationRecord, translation_id)
-        if not translation_record:
-            return jsonify({'error': 'Translation record not found'}), 404
+        if not translation_record or translation_record.user_id != user_id:
+            return jsonify({'error': 'Translation record not found or unauthorized'}), 403
 
         file_record = db.session.get(File, translation_record.file_id)
         system_prompt = file_record.system_prompt
@@ -83,17 +82,21 @@ class TranslationHandler:
 
         return jsonify({'message': 'Text translated successfully', 'translated_text': translated_text}), 200
 
-    def edit_text(self, translation_id, edited_text):
+    def edit_text(self, translation_id, edited_text, user_id):
         translation_record = db.session.get(TranslationRecord, translation_id)
-        if not translation_record:
-            return jsonify({'error': 'Translation record not found'}), 404
+        if not translation_record or translation_record.user_id != user_id:
+            return jsonify({'error': 'Translation record not found or unauthorized'}), 404
 
         translation_record.edited_text = edited_text
         db.session.commit()
 
         return jsonify({'message': 'Text edited successfully', 'edited_text': translation_record.edited_text}), 200
 
-    def update_translation(self, translation_id, data):
+    def update_translation(self, translation_id, data, user_id):
+        translation_record = db.session.get(TranslationRecord, translation_id)
+        if not translation_record or translation_record.user_id != user_id:
+            return jsonify({'error': 'Translation record not found or unauthorized'}), 403
+
         field = None
         value = None
 
@@ -106,10 +109,6 @@ class TranslationHandler:
 
         if not field:
             return {'error': 'No valid field provided'}, 400
-
-        translation_record = db.session.get(TranslationRecord, translation_id)
-        if not translation_record:
-            return {'error': 'Translation record not found'}, 404
 
         setattr(translation_record, field, value)
         db.session.commit()

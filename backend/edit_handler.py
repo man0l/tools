@@ -7,13 +7,13 @@ class EditHandler:
     def __init__(self, text_editor: TextEditor):
         self.text_editor = text_editor
 
-    def edit_text(self, translation_id):
+    def edit_text(self, translation_id, user_id):
         print("Received request with headers:", request.headers)
         print("Received request with body:", request.get_data())
 
         translation_record = db.session.get(TranslationRecord, translation_id)
-        if not translation_record:
-            return jsonify({'error': 'Translation record not found'}), 404
+        if not translation_record or translation_record.user_id != user_id:
+            return jsonify({'error': 'Translation record not found or unauthorized'}), 403
 
         # Use TextEditor to perform editing operations
         try:

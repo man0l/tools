@@ -6,7 +6,7 @@ class FileHandler:
     def __init__(self, file_uploader):
         self.file_uploader = file_uploader
 
-    def upload_file(self):
+    def upload_file(self, user_id):
         if 'pdf' not in request.files:
             return jsonify({'error': 'No file part'}), 400
 
@@ -18,7 +18,7 @@ class FileHandler:
             filehash = hash(file.read())
             file.seek(0)
 
-            existing_file = File.query.filter_by(filehash=filehash).first()
+            existing_file = File.query.filter_by(filehash=filehash, user_id=user_id).first()
             if existing_file:
                 return jsonify({'error': 'Duplicate file detected'}), 400
 
@@ -30,7 +30,8 @@ class FileHandler:
                 page_count=request.form.get('page_count', type=int),
                 page_range=request.form.get('page_range'),
                 system_prompt=request.form.get('system_prompt'),
-                user_prompt=request.form.get('user_prompt')
+                user_prompt=request.form.get('user_prompt'),
+                user_id=user_id
             )
             db.session.add(new_file)
             db.session.commit()
@@ -39,10 +40,10 @@ class FileHandler:
         else:
             return jsonify({'error': 'Invalid file type'}), 400
 
-    def get_files(self):
+    def get_files(self, user_id):
         page = request.args.get('page', 1, type=int)
         limit = request.args.get('limit', 10, type=int)
-        pagination = File.query.order_by(File.id).paginate(page=page, per_page=limit)
+        pagination = File.query.filter_by(user_id=user_id).order_by(File.id).paginate(page=page, per_page=limit)
         files = pagination.items
         total = pagination.total
 
@@ -57,10 +58,10 @@ class FileHandler:
         } for f in files]
         return jsonify({'files': file_list, 'total': total}), 200
 
-    def update_file_by_id(self, file_id):
+    def update_file_by_id(self, file_id, user_id):
         file_record = db.session.get(File, file_id)
-        if not file_record:
-            return jsonify({'error': 'File not found'}), 404
+        if not file_record or file_record.user_id != user_id:
+            return jsonify({'error': 'File not found or unauthorized'}), 403
 
         data = request.json
         file_record.page_count = data.get('page_count', file_record.page_count)
@@ -71,10 +72,10 @@ class FileHandler:
         db.session.commit()
         return jsonify({'message': 'File updated successfully'}), 200
 
-    def delete_file_by_id(self, file_id):
+    def delete_file_by_id(self, file_id, user_id):
         file_record = db.session.get(File, file_id)
-        if not file_record:
-            return jsonify({'error': 'File not found'}), 404
+        if not file_record or file_record.user_id != user_id:
+            return jsonify({'error': 'File not found or unauthorized'}), 403
 
         # Manually delete associated translation records
         TranslationRecord.query.filter_by(file_id=file_id).delete()

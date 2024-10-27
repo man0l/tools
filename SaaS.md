@@ -6,25 +6,17 @@
    - [1.1. Install Required Packages](#11-install-required-packages)
    - [1.2. Create User Model](#12-create-user-model)
    - [1.3. Set Up Database Migrations](#13-set-up-database-migrations)
-   - [1.4. Configure Flask-JWT-Extended](#14-configure-flask-jwt-extended)
-   - [1.5. Implement Authentication Routes](#15-implement-authentication-routes)
-   - [1.6. Protect Existing Routes with Authentication Middleware](#16-protect-existing-routes-with-authentication-middleware)
+   - [1.4. Implement Authentication Routes](#14-implement-authentication-routes)
 2. [Frontend Implementation](#frontend-implementation)
-   - [2.1. Choose an Authentication Library](#21-choose-an-authentication-library)
-   - [2.2. Install Required Packages](#22-install-required-packages)
-   - [2.3. Create Authentication Context](#23-create-authentication-context)
-   - [2.4. Build Signup and Login Pages](#24-build-signup-and-login-pages)
-   - [2.5. Configure Routes](#25-configure-routes)
-   - [2.6. Create PrivateRoute Component](#26-create-privateroute-component)
-   - [2.7. Handle JWT Token Storage and Refreshing](#27-handle-jwt-token-storage-and-refreshing)
-   - [2.8. Update Header Component](#28-update-header-component)
-   - [2.9. Create User Profile Page](#29-create-user-profile-page)
-   - [2.10. Update App.js with Profile Route](#210-update-app-js-with-profile-route)
-   - [2.11. Implement Error Handling](#211-implement-error-handling)
+   - [2.1. Create Authentication Context](#21-create-authentication-context)
+   - [2.2. Create API Client](#22-create-api-client)
+   - [2.3. Build Signup and Login Pages](#23-build-signup-and-login-pages)
+   - [2.4. Create PrivateRoute Component](#24-create-privateroute-component)
+   - [2.5. Create User Profile Page](#25-create-user-profile-page)
+   - [2.6. Update App Component](#26-update-app-component)
 3. [Additional Considerations](#additional-considerations)
-   - [3.1. Secure Token Storage](#31-secure-token-storage)
-   - [3.2. Password Security](#32-password-security)
-   - [3.3. Email Verification (Optional)](#33-email-verification-optional)
+   - [3.1. Error Handling](#31-error-handling)
+   - [3.2. Logout Functionality](#32-logout-functionality)
 
 ---
 
@@ -32,13 +24,13 @@
 
 ### 1.1. Install Required Packages
 
-First, install the necessary packages for authentication, password hashing, and JWT handling.
+Install the necessary packages for authentication and database management:
 
 ```bash
 pip install Flask-JWT-Extended passlib
 ```
 
-Update your `requirements.txt` to include these packages:
+Update your `requirements.txt`:
 
 ```plaintext
 Flask-JWT-Extended==4.4.4
@@ -47,9 +39,9 @@ passlib==1.7.4
 
 ### 1.2. Create User Model
 
-Create a `User` model to represent user accounts in your database.
+Create a `User` model in `backend/models/user_model.py`:
 
-```python:backend/models/user_model.py
+```python
 from datetime import datetime
 from backend.models.database import db
 from passlib.hash import bcrypt
@@ -70,46 +62,18 @@ class User(db.Model):
 
 ### 1.3. Set Up Database Migrations
 
-Ensure that your database is aware of the new `User` model by creating and applying migrations.
+Run database migrations to include the new `User` model:
 
 ```bash
 flask db migrate -m "Add User model"
 flask db upgrade
 ```
 
-Ensure your `app.py` imports the `User` model so that SQLAlchemy can detect it during migrations.
+### 1.4. Implement Authentication Routes
 
-```python:backend/app.py
-from backend.models.user_model import User
-# ... existing imports
-```
+Create authentication routes in `backend/auth_handler.py`:
 
-### 1.4. Configure Flask-JWT-Extended
-
-Set up JWT handling in your Flask application.
-
-```python:backend/app.py
-from flask_jwt_extended import JWTManager
-from datetime import timedelta
-
-# Initialize JWT
-app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY', 'your_jwt_secret_key')
-app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(minutes=15)
-app.config['JWT_REFRESH_TOKEN_EXPIRES'] = timedelta(days=30)
-jwt = JWTManager(app)
-```
-
-Ensure you have a secret key set in your `.env` file:
-
-```plaintext
-JWT_SECRET_KEY=your_very_secret_jwt_key
-```
-
-### 1.5. Implement Authentication Routes
-
-Create routes for user registration, login, and token refreshing.
-
-```python:backend/auth_handler.py
+```python
 from flask import Blueprint, request, jsonify
 from backend.models.user_model import User
 from backend.models.database import db
@@ -119,546 +83,145 @@ auth_bp = Blueprint('auth', __name__)
 
 @auth_bp.route('/signup', methods=['POST'])
 def signup():
-    data = request.get_json()
-    username = data.get('username')
-    email = data.get('email')
-    password = data.get('password')
-
-    if not username or not email or not password:
-        return jsonify({'error': 'Username, email, and password are required.'}), 400
-
-    if User.query.filter((User.username == username) | (User.email == email)).first():
-        return jsonify({'error': 'Username or email already exists.'}), 409
-
-    new_user = User(username=username, email=email)
-    new_user.set_password(password)
-
-    db.session.add(new_user)
-    db.session.commit()
-
-    return jsonify({'message': 'User created successfully.'}), 201
+    # Implementation for user signup
 
 @auth_bp.route('/login', methods=['POST'])
 def login():
-    data = request.get_json()
-    identifier = data.get('identifier')  # Can be username or email
-    password = data.get('password')
-
-    if not identifier or not password:
-        return jsonify({'error': 'Identifier and password are required.'}), 400
-
-    user = User.query.filter((User.username == identifier) | (User.email == identifier)).first()
-
-    if user and user.check_password(password):
-        access_token = create_access_token(identity=user.id)
-        refresh_token = create_refresh_token(identity=user.id)
-        return jsonify({
-            'access_token': access_token,
-            'refresh_token': refresh_token,
-            'userId': user.id
-        }), 200
-    else:
-        return jsonify({'error': 'Invalid credentials.'}), 401
+    # Implementation for user login
 
 @auth_bp.route('/refresh', methods=['POST'])
 @jwt_required(refresh=True)
 def refresh():
-    current_user = get_jwt_identity()
-    access_token = create_access_token(identity=current_user)
-    return jsonify({'access_token': access_token}), 200
+    # Implementation for token refresh
 ```
 
-Register the `auth_bp` blueprint in your `app.py`.
+Register the `auth_bp` blueprint in `backend/app.py`:
 
-```python:backend/app.py
+```python
 from backend.auth_handler import auth_bp
 
 app.register_blueprint(auth_bp, url_prefix='/auth')
 ```
 
-### 1.6. Protect Existing Routes with Authentication Middleware
-
-Ensure that existing routes are protected and require authentication. Here's how you can modify an existing route to require a valid JWT.
-
-```python:backend/app.py
-from flask_jwt_extended import jwt_required
-
-@app.route('/upload', methods=['POST'])
-@jwt_required()
-def upload_file():
-    return file_handler.upload_file()
-```
-
-Repeat the `@jwt_required()` decorator for all routes that should be accessible only to authenticated users.
-
 ---
 
 ## Frontend Implementation
 
-### 2.1. Choose an Authentication Library
+### 2.1. Create Authentication Context
 
-For React, you can either implement custom authentication handling or use libraries like [Auth0](https://auth0.com/), [Firebase Authentication](https://firebase.google.com/products/auth), or [React Context](https://reactjs.org/docs/context.html) combined with `react-router-dom` for route protection.
+Create `src/context/AuthContext.js`:
 
-For simplicity and flexibility, we'll implement a custom authentication context using React Context API and `axios` for HTTP requests.
+```javascript
+import React, { createContext, useState, useContext, useEffect } from 'react';
+import { api } from '../utils/api';
 
-### 2.2. Install Required Packages
+const AuthContext = createContext(null);
 
-Install necessary packages for handling HTTP requests and routing.
+export const AuthProvider = ({ children }) => {
+  const [user, setUser] = useState(null);
 
-```bash
-npm install axios react-router-dom
-```
+  // Implementation for login, signup, and logout functions
 
-You might already have some of these installed based on your `package.json`.
-
-### 2.3. Create Authentication Context
-
-Create a context to manage authentication state across your application.
-
-```javascript:src/context/AuthContext.js
-import React, { createContext, useState, useEffect } from 'react';
-import axios from 'axios';
-
-export const AuthContext = createContext();
-
-const AuthProvider = ({ children }) => {
-  const [authTokens, setAuthTokens] = useState(() => {
-    const tokens = localStorage.getItem('authTokens');
-    return tokens ? JSON.parse(tokens) : null;
-  });
-  const [user, setUser] = useState(() => {
-    if (authTokens) {
-      return authTokens.userId;
-    }
-    return null;
-  });
-
-  const loginUser = async (identifier, password) => {
-    try {
-      const response = await axios.post('http://localhost:5000/auth/login', {
-        identifier,
-        password
-      });
-      setAuthTokens(response.data);
-      setUser(response.data.userId);
-      localStorage.setItem('authTokens', JSON.stringify(response.data));
-      return { success: true };
-    } catch (error) {
-      console.error('Login failed:', error.response.data);
-      return { success: false, message: error.response.data.error };
-    }
-  };
-
-  const signupUser = async (username, email, password) => {
-    try {
-      const response = await axios.post('http://localhost:5000/auth/signup', {
-        username,
-        email,
-        password
-      });
-      return { success: true, message: response.data.message };
-    } catch (error) {
-      console.error('Signup failed:', error.response.data);
-      return { success: false, message: error.response.data.error };
-    }
-  };
-
-  const logoutUser = () => {
-    setAuthTokens(null);
-    setUser(null);
-    localStorage.removeItem('authTokens');
-  };
-
-  const refreshToken = async () => {
-    try {
-      const response = await axios.post('http://localhost:5000/auth/refresh', {}, {
-        headers: {
-          Authorization: `Bearer ${authTokens.refresh_token}`
-        }
-      });
-      const newTokens = {
-        access_token: response.data.access_token,
-        refresh_token: authTokens.refresh_token,
-        userId: user
-      };
-      setAuthTokens(newTokens);
-      localStorage.setItem('authTokens', JSON.stringify(newTokens));
-    } catch (error) {
-      console.error('Token refresh failed:', error.response.data);
-      logoutUser();
-    }
-  };
-
-  // Automatically refresh token before it expires
-  useEffect(() => {
-    if (authTokens) {
-      const interval = setInterval(() => {
-        refreshToken();
-      }, 14 * 60 * 1000); // Refresh every 14 minutes
-      return () => clearInterval(interval);
-    }
-  }, [authTokens]);
-
-  const contextData = {
+  const value = {
     user,
-    authTokens,
-    loginUser,
-    signupUser,
-    logoutUser
+    login,
+    signup,
+    logout
   };
 
-  return (
-    <AuthContext.Provider value={contextData}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
-export default AuthProvider;
+export const useAuth = () => {
+  return useContext(AuthContext);
+};
 ```
 
-### 2.4. Build Signup and Login Pages
+### 2.2. Create API Client
 
-Create signup and login components to handle user registration and authentication.
+Create `src/utils/api.js`:
 
-#### Signup Page
+```javascript
+import axios from 'axios';
 
-```javascript:src/pages/Signup.js
-import React, { useState, useContext } from 'react';
-import { AuthContext } from '../context/AuthContext';
+const api = axios.create({
+  baseURL: 'http://localhost:5000',
+});
+
+api.interceptors.request.use(
+  (config) => {
+    const user = JSON.parse(localStorage.getItem('user'));
+    if (user && user.access_token) {
+      config.headers['Authorization'] = `Bearer ${user.access_token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
+export { api };
+```
+
+### 2.3. Build Signup and Login Pages
+
+Create `src/pages/Signup.js` and `src/pages/Login.js`:
+
+```javascript
+// src/pages/Signup.js
+import React, { useState } from 'react';
+import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { toast, ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import { toast } from 'react-toastify';
 
 const Signup = () => {
-  const { signupUser } = useContext(AuthContext);
-  const navigate = useNavigate();
-  
-  const [formData, setFormData] = useState({
-    username: '',
-    email: '',
-    password: ''
-  });
-
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    const { username, email, password } = formData;
-    const result = await signupUser(username, email, password);
-    if (result.success) {
-      toast.success(result.message);
-      navigate('/login');
-    } else {
-      toast.error(result.message);
-    }
-  };
-
-  return (
-    <div className="max-w-md mx-auto mt-10 p-6 bg-white rounded shadow">
-      <ToastContainer />
-      <h2 className="text-2xl font-bold mb-4">Sign Up</h2>
-      <form onSubmit={handleSubmit}>
-        <div className="mb-4">
-          <label className="block mb-1">Username</label>
-          <input
-            type="text"
-            name="username"
-            className="w-full p-2 border rounded"
-            value={formData.username}
-            onChange={handleChange}
-            required
-          />
-        </div>
-        <div className="mb-4">
-          <label className="block mb-1">Email</label>
-          <input
-            type="email"
-            name="email"
-            className="w-full p-2 border rounded"
-            value={formData.email}
-            onChange={handleChange}
-            required
-          />
-        </div>
-        <div className="mb-6">
-          <label className="block mb-1">Password</label>
-          <input
-            type="password"
-            name="password"
-            className="w-full p-2 border rounded"
-            value={formData.password}
-            onChange={handleChange}
-            required
-          />
-        </div>
-        <button type="submit" className="w-full bg-blue-500 text-white p-2 rounded">
-          Sign Up
-        </button>
-      </form>
-    </div>
-  );
+  // Implementation for signup form
 };
 
 export default Signup;
-```
 
-#### Login Page
-
-```javascript:src/pages/Login.js
-import React, { useState, useContext } from 'react';
-import { AuthContext } from '../context/AuthContext';
+// src/pages/Login.js
+import React, { useState } from 'react';
+import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { toast, ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import { toast } from 'react-toastify';
 
 const Login = () => {
-  const { loginUser } = useContext(AuthContext);
-  const navigate = useNavigate();
-  
-  const [formData, setFormData] = useState({
-    identifier: '',
-    password: ''
-  });
-
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    const { identifier, password } = formData;
-    const result = await loginUser(identifier, password);
-    if (result.success) {
-      toast.success('Logged in successfully!');
-      navigate('/');
-    } else {
-      toast.error(result.message);
-    }
-  };
-
-  return (
-    <div className="max-w-md mx-auto mt-10 p-6 bg-white rounded shadow">
-      <ToastContainer />
-      <h2 className="text-2xl font-bold mb-4">Login</h2>
-      <form onSubmit={handleSubmit}>
-        <div className="mb-4">
-          <label className="block mb-1">Username or Email</label>
-          <input
-            type="text"
-            name="identifier"
-            className="w-full p-2 border rounded"
-            value={formData.identifier}
-            onChange={handleChange}
-            required
-          />
-        </div>
-        <div className="mb-6">
-          <label className="block mb-1">Password</label>
-          <input
-            type="password"
-            name="password"
-            className="w-full p-2 border rounded"
-            value={formData.password}
-            onChange={handleChange}
-            required
-          />
-        </div>
-        <button type="submit" className="w-full bg-green-500 text-white p-2 rounded">
-          Login
-        </button>
-      </form>
-    </div>
-  );
+  // Implementation for login form
 };
 
 export default Login;
 ```
 
-### 2.5. Configure Routes
+### 2.4. Create PrivateRoute Component
 
-Update your `App.js` to include the new authentication routes.
+Create `src/components/PrivateRoute.js`:
 
-```javascript:src/App.js
+```javascript
 import React from 'react';
-import './App.css';
-import Header from './components/Header';
-import MainContent from './components/MainContent';
-import Footer from './components/Footer';
-import FileList from './components/FileList';
-import UploadPDF from './components/UploadPDF';
-import TranslationList from './components/TranslationList';
-import PromptManager from './components/PromptManager';
-import Signup from './pages/Signup';
-import Login from './pages/Login';
-import PrivateRoute from './components/PrivateRoute';
-import AuthProvider from './context/AuthContext';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-
-function App() {
-  return (
-    <AuthProvider>
-      <Router>
-        <div className="flex flex-col min-h-screen bg-cream">
-          <Header />
-          <div className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 1444:px-10">
-            <Routes>
-              <Route path="/" element={<PrivateRoute><MainContent /></PrivateRoute>} />
-              <Route path="/upload-pdf" element={<PrivateRoute><UploadPDF /></PrivateRoute>} />
-              <Route path="/file-list" element={<PrivateRoute><FileList /></PrivateRoute>} />
-              <Route path="/translation-list" element={<PrivateRoute><TranslationList /></PrivateRoute>} />
-              <Route path="/prompt-manager" element={<PrivateRoute><PromptManager /></PrivateRoute>} />
-              <Route path="/signup" element={<Signup />} />
-              <Route path="/login" element={<Login />} />
-            </Routes>
-          </div>
-          <Footer />
-        </div>
-      </Router>
-    </AuthProvider>
-  );
-}
-
-export default App;
-```
-
-### 2.6. Create PrivateRoute Component
-
-Create a component to protect routes that require authentication.
-
-```javascript:src/components/PrivateRoute.js
-import React, { useContext } from 'react';
 import { Navigate } from 'react-router-dom';
-import { AuthContext } from '../context/AuthContext';
+import { useAuth } from '../context/AuthContext';
 
 const PrivateRoute = ({ children }) => {
-  const { authTokens } = useContext(AuthContext);
+  const { user } = useAuth();
 
-  return authTokens && authTokens.access_token ? children : <Navigate to="/login" />;
+  return user ? children : <Navigate to="/login" />;
 };
 
 export default PrivateRoute;
 ```
 
-### 2.7. Handle JWT Token Storage and Refreshing
+### 2.5. Create User Profile Page
 
-Ensure that your `axios` instance includes the JWT in the headers and handles token refreshing.
+Create `src/pages/Profile.js`:
 
-```javascript:src/utils/axiosInstance.js
-import axios from 'axios';
-import { useContext } from 'react';
-import { AuthContext } from '../context/AuthContext';
-
-const useAxios = () => {
-  const { authTokens, logoutUser, refreshToken } = useContext(AuthContext);
-
-  const axiosInstance = axios.create({
-    baseURL: 'http://localhost:5000',
-    headers: {
-      Authorization: authTokens ? `Bearer ${authTokens.access_token}` : ''
-    }
-  });
-
-  axiosInstance.interceptors.response.use(
-    response => response,
-    async error => {
-      const originalRequest = error.config;
-      if (error.response.status === 401 && !originalRequest._retry && authTokens?.refresh_token) {
-        originalRequest._retry = true;
-        await refreshToken();
-        originalRequest.headers['Authorization'] = `Bearer ${authTokens.access_token}`;
-        return axiosInstance(originalRequest);
-      }
-      return Promise.reject(error);
-    }
-  );
-
-  return axiosInstance;
-};
-
-export default useAxios;
-```
-
-**Note:** Due to the nature of hooks, ensure that `useAxios` is used within React components.
-
-### 2.8. Update Header Component
-
-Update the Header component to include login/logout functionality and display the user's authentication status.
-
-```javascript:src/components/Header.js
-import React, { useContext } from 'react';
-import { Link } from 'react-router-dom';
-import { AuthContext } from '../context/AuthContext';
-
-const Header = () => {
-  const { user, logoutUser } = useContext(AuthContext);
-
-  return (
-    <header className="bg-blue-600 text-white p-4">
-      <div className="container mx-auto flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Your App Name</h1>
-        <nav>
-          <ul className="flex space-x-4">
-            <li><Link to="/">Home</Link></li>
-            {user ? (
-              <>
-                <li><Link to="/profile">Profile</Link></li>
-                <li><button onClick={logoutUser}>Logout</button></li>
-              </>
-            ) : (
-              <>
-                <li><Link to="/login">Login</Link></li>
-                <li><Link to="/signup">Sign Up</Link></li>
-              </>
-            )}
-          </ul>
-        </nav>
-      </div>
-    </header>
-  );
-};
-
-export default Header;
-```
-
-### 2.9. Create User Profile Page
-
-Implement a user profile page to display and potentially edit user information.
-
-```javascript:src/pages/Profile.js
-import React, { useContext, useState, useEffect } from 'react';
-import { AuthContext } from '../context/AuthContext';
-import useAxios from '../utils/axiosInstance';
+```javascript
+import React from 'react';
+import { useAuth } from '../context/AuthContext';
 
 const Profile = () => {
-  const { user } = useContext(AuthContext);
-  const [profile, setProfile] = useState(null);
-  const axios = useAxios();
+  const { user } = useAuth();
 
-  useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        const response = await axios.get(`/api/users/${user}`);
-        setProfile(response.data);
-      } catch (error) {
-        console.error('Error fetching profile:', error);
-      }
-    };
-
-    if (user) {
-      fetchProfile();
-    }
-  }, [user, axios]);
-
-  if (!profile) {
+  if (!user) {
     return <div>Loading...</div>;
   }
 
@@ -666,9 +229,8 @@ const Profile = () => {
     <div className="max-w-md mx-auto mt-10 p-6 bg-white rounded shadow">
       <h2 className="text-2xl font-bold mb-4">User Profile</h2>
       <div>
-        <p><strong>Username:</strong> {profile.username}</p>
-        <p><strong>Email:</strong> {profile.email}</p>
-        {/* Add more profile information as needed */}
+        <p><strong>Username:</strong> {user.username}</p>
+        <p><strong>Email:</strong> {user.email}</p>
       </div>
     </div>
   );
@@ -677,24 +239,31 @@ const Profile = () => {
 export default Profile;
 ```
 
-### 2.10. Update App.js with Profile Route
+### 2.6. Update App Component
 
-Add the Profile route to your main App component.
+Update `src/App.js` to include the new routes and authentication context:
 
-```javascript:src/App.js
-// ... existing imports ...
+```javascript
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { AuthProvider } from './context/AuthContext';
+import Header from './components/Header';
+import Footer from './components/Footer';
+import MainContent from './components/MainContent';
+import FileList from './components/FileList';
+import UploadPDF from './components/UploadPDF';
+import TranslationList from './components/TranslationList';
+import PromptManager from './components/PromptManager';
+import Signup from './pages/Signup';
+import Login from './pages/Login';
 import Profile from './pages/Profile';
+import PrivateRoute from './components/PrivateRoute';
 
 function App() {
   return (
     <AuthProvider>
       <Router>
-        {/* ... existing code ... */}
-        <Routes>
-          {/* ... existing routes ... */}
-          <Route path="/profile" element={<PrivateRoute><Profile /></PrivateRoute>} />
-        </Routes>
-        {/* ... existing code ... */}
+        {/* Implement routes with PrivateRoute for protected pages */}
       </Router>
     </AuthProvider>
   );
@@ -703,57 +272,18 @@ function App() {
 export default App;
 ```
 
-### 2.11. Implement Error Handling
-
-Add error handling to your authentication flows and API requests to provide a better user experience.
-
-```javascript:src/context/AuthContext.js
-// ... existing imports ...
-import { toast } from 'react-toastify';
-
-const AuthProvider = ({ children }) => {
-  // ... existing code ...
-
-  const loginUser = async (identifier, password) => {
-    try {
-      // ... existing login logic ...
-    } catch (error) {
-      console.error('Login failed:', error);
-      toast.error(error.response?.data?.error || 'An error occurred during login');
-      return { success: false, message: error.response?.data?.error || 'Login failed' };
-    }
-  };
-
-  // ... implement similar error handling for signupUser and other functions ...
-
-  return (
-    <AuthContext.Provider value={contextData}>
-      {children}
-    </AuthContext.Provider>
-  );
-};
-
-export default AuthProvider;
-```
-
 ---
 
 ## Additional Considerations
 
-### 3.1. Secure Token Storage
+### 3.1. Error Handling
 
-Storing JWT tokens in `localStorage` can expose them to XSS attacks. Consider storing tokens in HTTP-only cookies for enhanced security. This requires configuring your backend to set cookies and adjust frontend requests accordingly.
+Implement proper error handling in your API calls and display user-friendly error messages using react-toastify.
 
-### 3.2. Password Security
+### 3.2. Logout Functionality
 
-Ensure that passwords are stored securely using strong hashing algorithms like bcrypt, as shown in the `User` model. Enforce strong password policies during signup.
-
-### 3.3. Email Verification (Optional)
-
-For added security and to ensure valid user accounts, implement email verification during signup. This involves sending a verification email with a unique link that the user must click to activate their account.
+Ensure that the logout function in the AuthContext clears all user data and redirects to the login page.
 
 ---
 
-
-
-
+This implementation plan provides a structure for adding authentication to your existing SaaS application. It uses JWT for authentication, React Context API for state management, and integrates with your existing components. Remember to test thoroughly and handle edge cases appropriately.
