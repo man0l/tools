@@ -7,6 +7,8 @@ import Modal from 'react-modal';
 import './FileList.css';
 import { Collapse } from 'react-collapse';
 import { useFileListData } from '../hooks/useFileListData';
+import { api} from '../utils/api';
+import { toast } from 'react-toastify';
 
 Modal.setAppElement('#root');
 
@@ -31,8 +33,6 @@ const FileList = () => {
   const [currentIndex, setCurrentIndex] = useState(null);
   const [expandedRows, setExpandedRows] = useState({});
 
-  const backendPort = process.env.REACT_APP_BACKEND_PORT || 5000;
-
   const handleEdit = (index, field, value) => {
     const updatedFiles = [...files];
     updatedFiles[index][field] = value;
@@ -56,19 +56,17 @@ const FileList = () => {
     });
   };
 
-  const handleTranslate = (file) => {
-    fetch(`http://localhost:${backendPort}/init_translation/${file.id}`, {
-      method: 'POST',
-    })
-    .then(response => response.json())
-    .then(data => {
-      if (data.message) {
-        setAlert({ message: data.message, type: 'success' });
+  const handleTranslate = async (file) => {
+    try {
+      const response = await api.post(`/init_translation/${file.id}`);
+      if (response.data.message) {
+        toast.success(response.data.message);
       } else {
-        setAlert({ message: 'Translation failed', type: 'error' });
+        throw new Error('No response message received');
       }
-    })
-    .catch(() => setAlert({ message: 'Translation failed', type: 'error' }));
+    } catch (error) {
+      toast.error(`Translation failed: ${error.response?.data?.message || error.message}`);
+    }
   };
 
   const openModal = (index, field, value) => {
@@ -80,11 +78,13 @@ const FileList = () => {
 
   const closeModal = () => {
     setModalIsOpen(false);
+    setCurrentValue('');
+    setCurrentField('');
+    setCurrentIndex(null);
   };
 
   const saveChanges = () => {
     handleEdit(currentIndex, currentField, currentValue);
-    setAlert({ message: 'File saved successfully', type: 'success' });
     closeModal();
   };
 
@@ -145,7 +145,7 @@ const FileList = () => {
                 <td className="border px-4 py-2">
                   <button onClick={() => debouncedUpdateFile(file)} className="mr-2"><FaSave /></button>
                   <button onClick={() => handleDelete(index)} className="mr-2"><FaTrash /></button>
-                  <button onClick={() => handleTranslate(file)}><FaLanguage /></button>
+                  <button onClick={handleTranslate}><FaLanguage /></button>
                 </td>
               </tr>
               <tr>

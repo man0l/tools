@@ -9,6 +9,7 @@ import { format } from 'date-fns';
 import { confirmAlert } from 'react-confirm-alert';
 import 'react-confirm-alert/src/react-confirm-alert.css';
 import usePromptManager from '../hooks/usePromptManager';
+import { api } from '../utils/api';
 
 Modal.setAppElement('#root');
 
@@ -35,22 +36,15 @@ const PromptManager = () => {
     fetchPrompts
   } = usePromptManager();
 
-  const backendPort = process.env.REACT_APP_BACKEND_PORT || 5000;
-
   const handleCreatePrompt = async () => {
     if (!newPrompt.system_message || !newPrompt.user_message || !newPrompt.prompt_type) {
       toast.error('All fields are required');
       return;
     }
     try {
-      const response = await fetch(`http://localhost:${backendPort}/prompts`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newPrompt),
-      });
-      const data = await response.json();
-      if (response.ok && data.message === "Prompt created successfully") {
-        toast.success(data.message);
+      const response = await api.post('/prompts', newPrompt);
+      if (response.data.message === "Prompt created successfully") {
+        toast.success(response.data.message);
         fetchPrompts();
         setNewPrompt({ system_message: '', user_message: '', prompt_type: 'translation' });
         setCreateModalIsOpen(false);
@@ -64,12 +58,8 @@ const PromptManager = () => {
 
   const handleUpdatePrompt = async (id, field, value) => {
     try {
-      const response = await fetch(`http://localhost:${backendPort}/prompts/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ [field]: value }),
-      });
-      if (response.ok) {
+      const response = await api.put(`/prompts/${id}`, { [field]: value });
+      if (response.status === 200) {
         toast.success('Prompt updated successfully');
         fetchPrompts();
         closeModal();
@@ -90,8 +80,8 @@ const PromptManager = () => {
           label: 'Yes',
           onClick: async () => {
             try {
-              const response = await fetch(`http://localhost:${backendPort}/prompts/${id}`, { method: 'DELETE' });
-              if (response.ok) {
+              const response = await api.delete(`/prompts/${id}`);
+              if (response.status === 200) {
                 toast.success('Prompt deleted successfully');
                 fetchPrompts();
               } else {

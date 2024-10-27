@@ -1,7 +1,6 @@
 import React, { useEffect } from 'react';
 import 'rc-slider/assets/index.css';
 import Slider from 'rc-slider';
-import { FaTrash } from 'react-icons/fa';
 import { useUploadPDFData } from '../hooks/useUploadPDFData';
 import usePromptManager from '../hooks/usePromptManager';
 import { toast, ToastContainer } from 'react-toastify';
@@ -171,7 +170,7 @@ function UploadPDF() {
             </div>
           )}
           <button onClick={handleClearTranslation} className="ml-2 text-red-500 hover:text-red-700 transition-colors">
-            <FaTrash />
+            delete
           </button>
         </div>
       )}
