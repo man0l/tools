@@ -1,7 +1,11 @@
-import React, { createContext, useState, useEffect } from 'react';
+import React, { createContext, useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 
 export const AuthContext = createContext();
+
+const api = axios.create({
+  baseURL: `http://localhost:${process.env.REACT_APP_BACKEND_PORT}`,
+});
 
 const AuthProvider = ({ children }) => {
   const [authTokens, setAuthTokens] = useState(() => {
@@ -9,54 +13,58 @@ const AuthProvider = ({ children }) => {
     return tokens ? JSON.parse(tokens) : null;
   });
   const [user, setUser] = useState(() => {
-    if (authTokens) {
-      return authTokens.userId;
-    }
-    return null;
+    return authTokens ? authTokens.userId : null;
   });
 
-  const loginUser = async (identifier, password) => {
+  const setAuthHeader = useCallback((token) => {
+    if (token) {
+      api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+    } else {
+      delete api.defaults.headers.common['Authorization'];
+    }
+  }, []);
+
+  useEffect(() => {
+    if (authTokens) {
+      setAuthHeader(authTokens.access_token);
+    }
+  }, [authTokens, setAuthHeader]);
+
+  const loginUser = useCallback(async (identifier, password) => {
     try {
-      const response = await axios.post('http://localhost:5000/auth/login', {
-        identifier,
-        password
-      });
+      const response = await api.post('/auth/login', { identifier, password });
       setAuthTokens(response.data);
       setUser(response.data.userId);
       localStorage.setItem('authTokens', JSON.stringify(response.data));
+      setAuthHeader(response.data.access_token);
       return { success: true };
     } catch (error) {
-      console.error('Login failed:', error.response.data);
-      return { success: false, message: error.response.data.error };
+      console.error('Login failed:', error.response?.data);
+      return { success: false, message: error.response?.data?.error || 'Login failed' };
     }
-  };
+  }, [setAuthHeader]);
 
-  const signupUser = async (username, email, password) => {
+  const signupUser = useCallback(async (username, email, password) => {
     try {
-      const response = await axios.post('http://localhost:5000/auth/signup', {
-        username,
-        email,
-        password
-      });
+      const response = await api.post('/auth/signup', { username, email, password });
       return { success: true, message: response.data.message };
     } catch (error) {
-      console.error('Signup failed:', error.response.data);
-      return { success: false, message: error.response.data.error };
+      console.error('Signup failed:', error.message);
+      return { success: false, message: error.response?.data?.error || 'Signup failed' };
     }
-  };
+  }, []);
 
-  const logoutUser = () => {
+  const logoutUser = useCallback(() => {
     setAuthTokens(null);
     setUser(null);
     localStorage.removeItem('authTokens');
-  };
+    setAuthHeader(null);
+  }, [setAuthHeader]);
 
-  const refreshToken = async () => {
+  const refreshToken = useCallback(async () => {
     try {
-      const response = await axios.post('http://localhost:5000/auth/refresh', {}, {
-        headers: {
-          Authorization: `Bearer ${authTokens.refresh_token}`
-        }
+      const response = await api.post('/auth/refresh', {
+        refresh_token: authTokens.refresh_token
       });
       const newTokens = {
         access_token: response.data.access_token,
@@ -65,11 +73,14 @@ const AuthProvider = ({ children }) => {
       };
       setAuthTokens(newTokens);
       localStorage.setItem('authTokens', JSON.stringify(newTokens));
+      setAuthHeader(newTokens.access_token);
+      return newTokens.access_token;
     } catch (error) {
-      console.error('Token refresh failed:', error.response.data);
+      console.error('Token refresh failed:', error.response?.data);
       logoutUser();
+      return null;
     }
-  };
+  }, [authTokens, user, setAuthHeader, logoutUser]);
 
   useEffect(() => {
     if (authTokens) {
@@ -78,7 +89,7 @@ const AuthProvider = ({ children }) => {
       }, 14 * 60 * 1000); // Refresh every 14 minutes
       return () => clearInterval(interval);
     }
-  }, [authTokens]);
+  }, [authTokens, refreshToken]);
 
   const contextData = {
     user,
@@ -86,7 +97,8 @@ const AuthProvider = ({ children }) => {
     loginUser,
     signupUser,
     logoutUser,
-    refreshToken
+    refreshToken,
+    api
   };
 
   return (

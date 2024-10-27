@@ -7,6 +7,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import { Collapse } from 'react-collapse';
 import ReactPaginate from 'react-paginate';
 import { useTranslationData } from '../hooks/useTranslationData';
+import api from '../utils/api';
 
 Modal.setAppElement('#root');
 
@@ -120,19 +121,11 @@ const TranslationList = () => {
 
   const handleEdit = (index, field, value) => {
     const updatedTranslations = [...translations];
-    updatedTranslations[index][field] = value;
     const translationId = translations[index].id;
-    fetch(`http://localhost:${backendPort}/update-translation/${translationId}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ [field]: value }), // Use the correct field
-    })
-      .then(response => response.json())
-      .then(data => {
-        updatedTranslations[index][field] = data[field]; // Use dynamic field
-        setTranslations(updatedTranslations); // Update the state
+    api().post(`/update-translation/${translationId}`, { [field]: value })
+      .then(response => {
+        updatedTranslations[index][field] = response.data[field];
+        setTranslations(updatedTranslations);
         toast.success('Text edited successfully');
       })
       .catch(() => toast.error('Failed to edit text'));
@@ -156,14 +149,11 @@ const TranslationList = () => {
 
   const handleExtract = (index) => {
     const translationId = translations[index].id;
-    fetch(`http://localhost:${backendPort}/perform_extraction/${translationId}`, {
-      method: 'POST',
-    })
-      .then(response => response.json())
-      .then(data => {
+    api().post(`/perform_extraction/${translationId}`)
+      .then(response => {
         const updatedTranslations = [...translations];
-        updatedTranslations[index].extracted_text = data.extracted_text;
-        setTranslations(updatedTranslations); // Update the state
+        updatedTranslations[index].extracted_text = response.data.extracted_text;
+        setTranslations(updatedTranslations);
         toast.success('Text extracted successfully');
       })
       .catch(() => toast.error('Failed to extract text'));
@@ -172,19 +162,11 @@ const TranslationList = () => {
   const handleTranslate = (index) => {
     toast.info('Translation in progress...');
     const translationId = translations[index].id;
-    fetch(`http://localhost:${backendPort}/translate/${translationId}`, {
-      method: 'POST',
-    })
+    api().post(`/translate/${translationId}`)
       .then(response => {
-        if (!response.ok) {
-          throw new Error('Failed to translate text');
-        }
-        return response.json();
-      })
-      .then(data => {
         const updatedTranslations = [...translations];
-        updatedTranslations[index].translated_text = data.translated_text;
-        setTranslations(updatedTranslations); // Update the state
+        updatedTranslations[index].translated_text = response.data.translated_text;
+        setTranslations(updatedTranslations);
         toast.success('Text translated successfully');
       })
       .catch((e) => {
@@ -197,22 +179,11 @@ const TranslationList = () => {
     console.log('Editing translation with ID:', translationId); // Log the translation ID
     toast.info('Editing in progress...');
 
-    fetch(`http://localhost:${backendPort}/edit/${translationId}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    })
+    api().post(`/edit/${translationId}`)
       .then(response => {
-        if (!response.ok) {
-          return response.text().then(text => { throw new Error(text) });
-        }
-        return response.json();
-      })
-      .then(data => {
         const updatedTranslations = [...translations];
-        updatedTranslations[index].edited_text = data.edited_text; // Use dynamic field
-        setTranslations(updatedTranslations); // Update the state
+        updatedTranslations[index].edited_text = response.data.edited_text;
+        setTranslations(updatedTranslations);
         toast.success('Text edited successfully');
       })
       .catch((e) => {

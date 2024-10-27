@@ -7,6 +7,7 @@ import Modal from 'react-modal';
 import './FileList.css';
 import { Collapse } from 'react-collapse';
 import { useFileListData } from '../hooks/useFileListData';
+import api from '../utils/api';
 
 Modal.setAppElement('#root');
 
@@ -57,18 +58,15 @@ const FileList = () => {
   };
 
   const handleTranslate = (file) => {
-    fetch(`http://localhost:${backendPort}/init_translation/${file.id}`, {
-      method: 'POST',
-    })
-    .then(response => response.json())
-    .then(data => {
-      if (data.message) {
-        setAlert({ message: data.message, type: 'success' });
-      } else {
-        setAlert({ message: 'Translation failed', type: 'error' });
-      }
-    })
-    .catch(() => setAlert({ message: 'Translation failed', type: 'error' }));
+    api().post(`/init_translation/${file.id}`)
+      .then(response => {
+        if (response.data.message) {
+          setAlert({ message: response.data.message, type: 'success' });
+        } else {
+          setAlert({ message: 'Translation failed', type: 'error' });
+        }
+      })
+      .catch(() => setAlert({ message: 'Translation failed', type: 'error' }));
   };
 
   const openModal = (index, field, value) => {

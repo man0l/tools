@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
+import useApi from '../utils/api';
 
 export const useTranslationData = () => {
   const [files, setFiles] = useState([]);
@@ -9,22 +10,20 @@ export const useTranslationData = () => {
   const [currentPage, setCurrentPage] = useState(0);
   const [itemsPerPage, setItemsPerPage] = useState(10);
 
-  const backendPort = process.env.REACT_APP_BACKEND_PORT || 5000;
+  const api = useApi();
 
   useEffect(() => {
-    fetch(`http://localhost:${backendPort}/files`)
-      .then(response => response.json())
-      .then(data => setFiles(data.files))
+    api.get('/files')
+      .then(response => setFiles(response.data.files))
       .catch(() => toast.error('Failed to fetch files'));
   }, []);
 
   useEffect(() => {
     if (selectedFile) {
-      fetch(`http://localhost:${backendPort}/translations/${selectedFile}?page=${currentPage + 1}&limit=${itemsPerPage}`)
-        .then(response => response.json())
-        .then(data => {
-          setTranslations(data.translations);
-          setTotalTranslations(data.total);
+      api.get(`/translations/${selectedFile}?page=${currentPage + 1}&limit=${itemsPerPage}`)
+        .then(response => {
+          setTranslations(response.data.translations);
+          setTotalTranslations(response.data.total);
         })
         .catch(() => toast.error('Failed to fetch translations'));
     }

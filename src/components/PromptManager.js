@@ -9,6 +9,7 @@ import { format } from 'date-fns';
 import { confirmAlert } from 'react-confirm-alert';
 import 'react-confirm-alert/src/react-confirm-alert.css';
 import usePromptManager from '../hooks/usePromptManager';
+import api from '../utils/api';
 
 Modal.setAppElement('#root');
 
@@ -43,20 +44,20 @@ const PromptManager = () => {
       return;
     }
     try {
-      const response = await fetch(`http://localhost:${backendPort}/prompts`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newPrompt),
-      });
-      const data = await response.json();
-      if (response.ok && data.message === "Prompt created successfully") {
-        toast.success(data.message);
-        fetchPrompts();
-        setNewPrompt({ system_message: '', user_message: '', prompt_type: 'translation' });
-        setCreateModalIsOpen(false);
-      } else {
-        toast.error('Failed to create prompt');
-      }
+      api().post('/prompts', newPrompt)
+        .then(response => {
+          if (response.data.message === "Prompt created successfully") {
+            toast.success(response.data.message);
+            fetchPrompts();
+            setNewPrompt({ system_message: '', user_message: '', prompt_type: 'translation' });
+            setCreateModalIsOpen(false);
+          } else {
+            toast.error('Failed to create prompt');
+          }
+        })
+        .catch(error => {
+          toast.error('Failed to create prompt');
+        });
     } catch (error) {
       toast.error('Failed to create prompt');
     }
@@ -64,18 +65,15 @@ const PromptManager = () => {
 
   const handleUpdatePrompt = async (id, field, value) => {
     try {
-      const response = await fetch(`http://localhost:${backendPort}/prompts/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ [field]: value }),
-      });
-      if (response.ok) {
-        toast.success('Prompt updated successfully');
-        fetchPrompts();
-        closeModal();
-      } else {
-        toast.error('Failed to update prompt');
-      }
+      api().put(`/prompts/${id}`, { [field]: value })
+        .then(response => {
+          toast.success('Prompt updated successfully');
+          fetchPrompts();
+          closeModal();
+        })
+        .catch(error => {
+          toast.error('Failed to update prompt');
+        });
     } catch (error) {
       toast.error('Failed to update prompt');
     }
@@ -90,13 +88,14 @@ const PromptManager = () => {
           label: 'Yes',
           onClick: async () => {
             try {
-              const response = await fetch(`http://localhost:${backendPort}/prompts/${id}`, { method: 'DELETE' });
-              if (response.ok) {
-                toast.success('Prompt deleted successfully');
-                fetchPrompts();
-              } else {
-                toast.error('Failed to delete prompt');
-              }
+              api().delete(`/prompts/${id}`)
+                .then(response => {
+                  toast.success('Prompt deleted successfully');
+                  fetchPrompts();
+                })
+                .catch(error => {
+                  toast.error('Failed to delete prompt');
+                });
             } catch (error) {
               toast.error('Failed to delete prompt');
             }

@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react';
 import { PDFDocument } from 'pdf-lib';
+import useApi from '../utils/api';
 
 export const usePDFProcessing = (setAlert) => {
   const [file, setFile] = useState(null);
@@ -18,41 +19,7 @@ export const usePDFProcessing = (setAlert) => {
   const debounceTimeout = useRef(null);
   const [uploadProgress, setUploadProgress] = useState(0);
 
-  const backendPort = process.env.REACT_APP_BACKEND_PORT || 5000;
-
-  const fetchExtractedText = async (file, range) => {
-    console.log('Fetching extracted text for range:', range);
-    setExtracting(true);
-    const formData = new FormData();
-    formData.append('pdf', file);
-    formData.append('startPage', range[0]);
-    formData.append('endPage', range[1]);
-
-    try {
-      const response = await fetch(`http://localhost:${backendPort}/extract-text`, {
-        method: 'POST',
-        body: formData,
-      });
-      if (response.ok) {
-        const result = await response.json();
-        setExtractedText(result.extractedText);
-        setNumTokens(result.numTokens);
-        setAlert({ message: 'Text extracted successfully', type: 'success' });
-
-        if (result.numTokens > maxTokens / 2) {
-          setAlert({ message: `Extracted tokens exceed half of the maximum allowed (${maxTokens / 2}). Translation not allowed.`, type: 'error' });
-        }
-      } else {
-        const errorResult = await response.json();
-        setAlert({ message: errorResult.error || 'Failed to extract text', type: 'error' });
-      }
-    } catch (error) {
-      console.error('Error extracting text:', error);
-      setAlert({ message: 'Error extracting text', type: 'error' });
-    } finally {
-      setExtracting(false);
-    }
-  };
+  const api = useApi();
 
   const handleFileChange = async (event) => {
     const selectedFile = event.target.files[0];
@@ -86,6 +53,33 @@ export const usePDFProcessing = (setAlert) => {
     }
   };
 
+  const fetchExtractedText = async (file, range) => {
+    console.log('Fetching extracted text for range:', range);
+    setExtracting(true);
+    const formData = new FormData();
+    formData.append('pdf', file);
+    formData.append('startPage', range[0]);
+    formData.append('endPage', range[1]);
+
+    try {
+      const response = await api.post('/extract-text', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      setExtractedText(response.data.extractedText);
+      setNumTokens(response.data.numTokens);
+      setAlert({ message: 'Text extracted successfully', type: 'success' });
+
+      if (response.data.numTokens > maxTokens / 2) {
+        setAlert({ message: `Extracted tokens exceed half of the maximum allowed (${maxTokens / 2}). Translation not allowed.`, type: 'error' });
+      }
+    } catch (error) {
+      console.error('Error extracting text:', error);
+      setAlert({ message: 'Error extracting text', type: 'error' });
+    } finally {
+      setExtracting(false);
+    }
+  };
+
   const handleTestTranslation = async () => {
     if (!file) {
       setAlert({ message: 'No file selected', type: 'error' });
@@ -111,20 +105,13 @@ export const usePDFProcessing = (setAlert) => {
     formData.append('userPrompt', userPrompt);
 
     try {
-      const response = await fetch(`http://localhost:${backendPort}/test-translation`, {
-        method: 'POST',
-        body: formData,
+      const response = await api.post('/test-translation', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
       });
-      if (response.ok) {
-        const result = await response.json();
-        setTranslatedText(result.translation);
-        setCompletionTokens(result.completionTokens);
-        setPromptTokens(result.promptTokens);
-        setAlert({ message: 'Translation successful', type: 'success' });
-      } else {
-        const errorResult = await response.json();
-        setAlert({ message: errorResult.error || 'Test translation failed', type: 'error' });
-      }
+      setTranslatedText(response.data.translation);
+      setCompletionTokens(response.data.completionTokens);
+      setPromptTokens(response.data.promptTokens);
+      setAlert({ message: 'Translation successful', type: 'success' });
     } catch (error) {
       setAlert({ message: 'Error testing translation', type: 'error' });
       console.error('Error testing translation:', error);
@@ -155,20 +142,14 @@ export const usePDFProcessing = (setAlert) => {
     formData.append('user_prompt', userPrompt);
 
     try {
-      const response = await fetch(`http://localhost:${backendPort}/upload`, {
-        method: 'POST',
-        body: formData,
+      const response = await api.post('/upload', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
         onUploadProgress: (progressEvent) => {
           const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
           setUploadProgress(percentCompleted);
         },
       });
-      if (response.ok) {
-        setAlert({ message: 'File uploaded successfully. Proceed to the next step.', type: 'success' });
-      } else {
-        const errorResult = await response.json();
-        setAlert({ message: errorResult.error || 'File upload failed', type: 'error' });
-      }
+      setAlert({ message: 'File uploaded successfully. Proceed to the next step.', type: 'success' });
     } catch (error) {
       setAlert({ message: 'Error uploading file', type: 'error' });
       console.error('Error uploading file:', error);

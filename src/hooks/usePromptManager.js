@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
+import useApi from '../utils/api';
 
 const usePromptManager = () => {
   const [prompts, setPrompts] = useState([]);
@@ -12,14 +13,13 @@ const usePromptManager = () => {
   const [totalPrompts, setTotalPrompts] = useState(0);
   const [editField, setEditField] = useState('');
 
-  const backendPort = process.env.REACT_APP_BACKEND_PORT || 5000;
+  const api = useApi();
 
   const fetchPrompts = async () => {
     try {
-      const response = await fetch(`http://localhost:${backendPort}/prompts?page=${currentPage + 1}&itemsPerPage=${itemsPerPage}`);
-      const data = await response.json();
-      setPrompts(data.prompts || []);
-      setTotalPrompts(data.total || 0);
+      const response = await api.get(`/prompts?page=${currentPage + 1}&itemsPerPage=${itemsPerPage}`);
+      setPrompts(response.data.prompts || []);
+      setTotalPrompts(response.data.total || 0);
     } catch (error) {
       toast.error('Failed to fetch prompts');
       setPrompts([]);

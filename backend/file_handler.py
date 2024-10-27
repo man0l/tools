@@ -1,12 +1,15 @@
 from flask import request, jsonify
 from backend.models.file_model import db, File
 from backend.models.translation_model import TranslationRecord
+from flask_jwt_extended import jwt_required, get_jwt_identity
 
 class FileHandler:
     def __init__(self, file_uploader):
         self.file_uploader = file_uploader
 
+    @jwt_required()
     def upload_file(self):
+        current_user = get_jwt_identity()
         if 'pdf' not in request.files:
             return jsonify({'error': 'No file part'}), 400
 
@@ -39,7 +42,9 @@ class FileHandler:
         else:
             return jsonify({'error': 'Invalid file type'}), 400
 
+    @jwt_required()
     def get_files(self):
+        current_user = get_jwt_identity()
         page = request.args.get('page', 1, type=int)
         limit = request.args.get('limit', 10, type=int)
         pagination = File.query.order_by(File.id).paginate(page=page, per_page=limit)
@@ -57,7 +62,9 @@ class FileHandler:
         } for f in files]
         return jsonify({'files': file_list, 'total': total}), 200
 
+    @jwt_required()
     def update_file_by_id(self, file_id):
+        current_user = get_jwt_identity()
         file_record = db.session.get(File, file_id)
         if not file_record:
             return jsonify({'error': 'File not found'}), 404
@@ -71,7 +78,9 @@ class FileHandler:
         db.session.commit()
         return jsonify({'message': 'File updated successfully'}), 200
 
+    @jwt_required()
     def delete_file_by_id(self, file_id):
+        current_user = get_jwt_identity()
         file_record = db.session.get(File, file_id)
         if not file_record:
             return jsonify({'error': 'File not found'}), 404
