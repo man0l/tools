@@ -26,9 +26,17 @@ api.interceptors.response.use(
       const user = JSON.parse(localStorage.getItem('user'));
       if (user && user.refresh_token) {
         try {
-          const res = await axios.post(`http://localhost:${backendPort}/auth/refresh`, {
-            refresh_token: user.refresh_token
-          });
+          const res = await axios.post(
+            `http://localhost:${backendPort}/auth/refresh`,
+            {
+                refresh_token: user.refresh_token
+            },  // empty body
+            {
+              headers: {
+                'Authorization': `Bearer ${user.refresh_token}`
+              }
+            }
+          );
           if (res.status === 200) {
             user.access_token = res.data.access_token;
             localStorage.setItem('user', JSON.stringify(user));

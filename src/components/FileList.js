@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import ReactPaginate from 'react-paginate';
 import { FaSave, FaTrash, FaLanguage, FaChevronDown, FaChevronUp } from 'react-icons/fa';
 import { confirmAlert } from 'react-confirm-alert';
@@ -8,7 +8,7 @@ import './FileList.css';
 import { Collapse } from 'react-collapse';
 import { useFileListData } from '../hooks/useFileListData';
 import { api} from '../utils/api';
-import { toast } from 'react-toastify';
+import { toast, ToastContainer } from 'react-toastify';
 
 Modal.setAppElement('#root');
 
@@ -32,6 +32,7 @@ const FileList = () => {
   const [currentValue, setCurrentValue] = useState('');
   const [currentIndex, setCurrentIndex] = useState(null);
   const [expandedRows, setExpandedRows] = useState({});
+  const [pageCount, setPageCount] = useState(''); // Add local state for page count
 
   const handleEdit = (index, field, value) => {
     const updatedFiles = [...files];
@@ -65,7 +66,13 @@ const FileList = () => {
         throw new Error('No response message received');
       }
     } catch (error) {
-      toast.error(`Translation failed: ${error.response?.data?.message || error.message}`);
+      // Check for specific error message
+      const errorMessage = error.response?.data?.message || error.message;
+      if (errorMessage === "There are already translation records for this file") {
+        toast.error(errorMessage); // Show specific error message
+      } else {
+        toast.error(`Translation failed: ${errorMessage}`);
+      }
     }
   };
 
@@ -99,8 +106,22 @@ const FileList = () => {
     setCurrentPage(data.selected);
   };
 
+  // Effect to handle debounced update for page count
+  useEffect(() => {
+    if (pageCount) {
+      const timer = setTimeout(() => {
+        if (currentIndex !== null) {
+          handleEdit(currentIndex, 'page_count', pageCount);
+        }
+      }, 500); // Adjust the delay as needed
+
+      return () => clearTimeout(timer); // Cleanup on unmount or when dependencies change
+    }
+  }, [pageCount, currentIndex]); // Dependencies
+
   return (
     <div className="file-list mt-8">
+      <ToastContainer />
       {loading && <div className="spinner">Loading files...</div>}
       {error && <p className="text-red-500">{error}</p>}
       {alert.message && (
@@ -131,8 +152,10 @@ const FileList = () => {
                   <input
                     type="text"
                     value={file.page_count || ''}
-                    onChange={(e) => handleEdit(index, 'page_count', e.target.value)}
-                    onFocus={(e) => e.target.select()}
+                    onChange={(e) => {
+                      setPageCount(e.target.value); // Update local state
+                      setCurrentIndex(index); // Set current index for editing
+                    }}
                   />
                 </td>
                 <td className="border px-4 py-2">
@@ -145,7 +168,7 @@ const FileList = () => {
                 <td className="border px-4 py-2">
                   <button onClick={() => debouncedUpdateFile(file)} className="mr-2"><FaSave /></button>
                   <button onClick={() => handleDelete(index)} className="mr-2"><FaTrash /></button>
-                  <button onClick={handleTranslate}><FaLanguage /></button>
+                  <button onClick={() => handleTranslate(file)}><FaLanguage /></button>
                 </td>
               </tr>
               <tr>

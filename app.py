@@ -187,7 +187,8 @@ def handle_create_prompt():
 @app.route('/prompts/<int:prompt_id>', methods=['PUT'])
 @jwt_required()
 def handle_update_prompt(prompt_id):
-    return prompt_handler.update_prompt(prompt_id)
+    current_user_id = get_jwt_identity()  # Retrieve the current user's ID
+    return prompt_handler.update_prompt(prompt_id, current_user_id)  # Pass user_id here
 
 @app.route('/prompts/<int:prompt_id>', methods=['DELETE'])
 @jwt_required()

@@ -1,7 +1,12 @@
 from flask import Blueprint, request, jsonify
 from backend.models.user_model import User
 from backend.models.database import db
-from flask_jwt_extended import create_access_token, create_refresh_token, jwt_required, get_jwt_identity
+from flask_jwt_extended import (
+    create_access_token, 
+    create_refresh_token, 
+    jwt_required, 
+    get_jwt_identity
+)
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -51,6 +56,21 @@ def login():
 @auth_bp.route('/refresh', methods=['POST'])
 @jwt_required(refresh=True)
 def refresh():
-    current_user = get_jwt_identity()
-    access_token = create_access_token(identity=current_user)
-    return jsonify({'access_token': access_token}), 200
+    try:
+        # Get the refresh token from the request body
+        data = request.get_json()
+        refresh_token = data.get('refresh_token')
+        
+        if not refresh_token:
+            return jsonify({'error': 'Refresh token is required'}), 400
+
+        # Create new access token using the refresh token
+        access_token = create_access_token(
+            identity=get_jwt_identity(), 
+            additional_claims={"refresh": True}
+        )
+        
+        return jsonify({'access_token': access_token}), 200
+        
+    except Exception as e:
+        return jsonify({'error': 'Invalid refresh token ' + str(e)}), 401
