@@ -62,9 +62,6 @@ logger = logging.getLogger(__name__)
 
 app.register_blueprint(auth_bp, url_prefix='/auth')
 
-with app.app_context():
-    db.create_all()
-
 @app.route('/upload', methods=['POST'])
 @jwt_required()
 def upload_file():
