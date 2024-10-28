@@ -56,12 +56,12 @@ services:
       - .env
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.backend.rule=Host(`${DOMAIN}`) && PathPrefix(`/api`)"
-      - "traefik.http.routers.backend.entrypoints=websecure"
-      - "traefik.http.routers.backend.tls.certresolver=myresolver"
-      - "traefik.http.services.backend.loadbalancer.server.port=5001"
+      - "traefik.http.routers.backend-api.rule=Host(`${DOMAIN}`) && PathPrefix(`/api`)"
+      - "traefik.http.routers.backend-api.entrypoints=websecure"
+      - "traefik.http.routers.backend-api.tls.certresolver=myresolver"
+      - "traefik.http.services.backend-api.loadbalancer.server.port=5001"
       - "traefik.http.middlewares.strip-api-prefix.stripprefix.prefixes=/api"
-      - "traefik.http.routers.backend.middlewares=strip-api-prefix@docker"
+      - "traefik.http.routers.backend-api.middlewares=strip-api-prefix@docker"
       - "com.centurylinklabs.watchtower.enable=true"
     networks:
       - app-network
