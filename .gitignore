@@ -11,3 +11,5 @@ migrations/alembic/
 migrations/env.py
 migrations/README
 migrations/script.py.mako
+build/
+dist/
