@@ -71,6 +71,9 @@ services:
     image: containrrr/watchtower
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - REPO_USER: man0l
+      - REPO_PASS: ${GH_TOKEN}
     command:
       - "--label-enable"
       - "--interval"
