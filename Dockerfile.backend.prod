@@ -22,7 +22,7 @@ RUN useradd -m appuser && chown -R appuser:appuser /app
 USER appuser
 
 # Expose port
-EXPOSE ${FLASK_RUN_PORT}
+EXPOSE 5001
 
 # Start Gunicorn
-CMD ["gunicorn", "--bind", "0.0.0.0:${FLASK_RUN_PORT}", "--workers", "4", "--threads", "2", "--timeout", "120", "--access-logfile", "-", "--error-logfile", "-", "app:app"]
+CMD ["gunicorn", "--bind", "0.0.0.0:5001", "--workers", "4", "--threads", "2", "--timeout", "120", "--access-logfile", "-", "--error-logfile", "-", "app:app"]
