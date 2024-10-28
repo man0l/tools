@@ -35,7 +35,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: ./
-          dockerfile: Dockerfile.backend
+          file: Dockerfile.backend
           push: true
           tags: ghcr.io/man0l/tools:backend-latest,ghcr.io/man0l/tools:backend-${{ env.COMMIT_SHORT_SHA }}
           cache-from: type=gha
@@ -45,7 +45,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: ./
-          dockerfile: Dockerfile.frontend
+          file: Dockerfile.frontend
           push: true
           tags: ghcr.io/man0l/tools:frontend-latest,ghcr.io/man0l/tools:frontend-${{ env.COMMIT_SHORT_SHA }}
           cache-from: type=gha
