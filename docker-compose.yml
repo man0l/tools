@@ -45,6 +45,7 @@ services:
     environment:
       - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       - NODE_ENV=development
+      - FLASK_RUN_PORT=5001
     env_file:
       - .env
     labels:
@@ -52,7 +53,7 @@ services:
       - "traefik.http.routers.backend.rule=Host(`${DOMAIN}`) && PathPrefix(`/api`)"
       - "traefik.http.routers.backend.entrypoints=websecure"
       - "traefik.http.routers.backend.tls.certresolver=myresolver"
-      - "traefik.http.services.backend.loadbalancer.server.port=${FLASK_RUN_PORT}"
+      - "traefik.http.services.backend.loadbalancer.server.port=5001"
     networks:
       - app-network
     depends_on:
