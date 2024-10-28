@@ -59,6 +59,7 @@ services:
       - "traefik.http.routers.backend-api.entrypoints=websecure"
       - "traefik.http.routers.backend-api.tls.certresolver=myresolver"
       - "traefik.http.services.backend-api.loadbalancer.server.port=5001"
+      # This middleware strips the /api prefix before forwarding to Flask
       - "traefik.http.middlewares.strip-api-prefix.stripprefix.prefixes=/api"
       - "traefik.http.routers.backend-api.middlewares=strip-api-prefix@docker"
       - "com.centurylinklabs.watchtower.enable=true"

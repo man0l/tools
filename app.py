@@ -22,6 +22,7 @@ from backend.prompt_handler import PromptHandler
 from flask_jwt_extended import JWTManager, jwt_required, get_jwt_identity
 from datetime import timedelta
 from backend.auth_handler import auth_bp
+import logging
 
 load_dotenv()
 
@@ -53,6 +54,10 @@ file_handler = FileHandler(file_uploader)
 translation_handler = TranslationHandler(translator, text_extractor)
 edit_handler = EditHandler(text_editor)
 prompt_handler = PromptHandler()
+
+# Set up logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 app.register_blueprint(auth_bp, url_prefix='/auth')
 
@@ -204,6 +209,20 @@ def health_check():
         return jsonify({'status': 'healthy'}), 200
     except Exception as e:
         return jsonify({'status': 'unhealthy', 'error': str(e)}), 500
+
+@app.errorhandler(404)
+def not_found_error(error):
+    logger.error(f"""
+    404 Error:
+    Path: {request.path}
+    Method: {request.method}
+    Headers: {dict(request.headers)}
+    """)
+    return jsonify({
+        'error': 'Not Found',
+        'path': request.path,
+        'method': request.method
+    }), 404
 
 if __name__ == '__main__':
     with app.app_context():
