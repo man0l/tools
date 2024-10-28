@@ -23,6 +23,7 @@ from flask_jwt_extended import JWTManager, jwt_required, get_jwt_identity
 from datetime import timedelta
 from backend.auth_handler import auth_bp
 import logging
+from sqlalchemy import text
 
 load_dotenv()
 
@@ -205,7 +206,7 @@ def handle_delete_prompt(prompt_id):
 def health_check():
     try:
         # Test database connection
-        db.session.execute('SELECT 1')
+        db.session.execute(text('SELECT 1'))
         return jsonify({'status': 'healthy'}), 200
     except Exception as e:
         return jsonify({'status': 'unhealthy', 'error': str(e)}), 500
