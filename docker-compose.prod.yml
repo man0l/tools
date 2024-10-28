@@ -46,6 +46,11 @@ services:
     environment:
       - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       - NODE_ENV=production
+      - FLASK_ENV=production
+      - FLASK_DEBUG=0
+      - WORKERS=4
+      - THREADS=2
+      - TIMEOUT=120
     env_file:
       - .env
     labels:
@@ -58,8 +63,14 @@ services:
     networks:
       - app-network
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:${FLASK_RUN_PORT}/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   postgres:
     image: postgres:15-alpine

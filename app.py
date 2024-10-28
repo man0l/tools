@@ -196,6 +196,15 @@ def handle_delete_prompt(prompt_id):
     current_user_id = get_jwt_identity()
     return prompt_handler.delete_prompt(prompt_id, current_user_id)
 
+@app.route('/health')
+def health_check():
+    try:
+        # Test database connection
+        db.session.execute('SELECT 1')
+        return jsonify({'status': 'healthy'}), 200
+    except Exception as e:
+        return jsonify({'status': 'unhealthy', 'error': str(e)}), 500
+
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
