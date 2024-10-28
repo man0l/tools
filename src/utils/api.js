@@ -3,7 +3,7 @@ import axios from 'axios';
 const backendPort = process.env.REACT_APP_BACKEND_PORT || 5000;
 
 const api = axios.create({
-  baseURL: `http://localhost:${backendPort}`,
+  baseURL: `http://${process.env.DOMAIN || 'localhost'}:${backendPort}`,
 });
 
 api.interceptors.request.use(
@@ -27,7 +27,7 @@ api.interceptors.response.use(
       if (user && user.refresh_token) {
         try {
           const res = await axios.post(
-            `http://localhost:${backendPort}/auth/refresh`,
+            `http://${process.env.DOMAIN || 'localhost'}:${backendPort}/auth/refresh`,
             {
                 refresh_token: user.refresh_token
             },  // empty body
