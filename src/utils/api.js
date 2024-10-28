@@ -1,9 +1,12 @@
 import axios from 'axios';
 
 const backendPort = process.env.REACT_APP_BACKEND_PORT || 5000;
+const isDevelopment = process.env.NODE_ENV === 'development';
 
 const api = axios.create({
-  baseURL: `http://${process.env.DOMAIN || 'localhost'}:${backendPort}`,
+  baseURL: isDevelopment 
+    ? `http://localhost:${backendPort}`
+    : `/api`,
 });
 
 api.interceptors.request.use(
