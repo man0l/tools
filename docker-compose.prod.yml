@@ -5,7 +5,6 @@ services:
     image: traefik:v2.10
     command:
       - "--api=true"
-      - "--api.dashboard=true"
       - "--api.insecure=true"
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
@@ -20,7 +19,6 @@ services:
     ports:
       - "80:80"
       - "443:443"
-      - "8080:8080"
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
       - "./letsencrypt:/letsencrypt"
