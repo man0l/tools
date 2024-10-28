@@ -59,7 +59,7 @@ services:
       - "traefik.http.routers.backend.rule=Host(`${DOMAIN}`) && PathPrefix(`/api`)"
       - "traefik.http.routers.backend.entrypoints=websecure"
       - "traefik.http.routers.backend.tls.certresolver=myresolver"
-      - "traefik.http.services.backend.loadbalancer.server.port=${FLASK_RUN_PORT}"
+      - "traefik.http.services.backend.loadbalancer.server.port=5001"
       - "com.centurylinklabs.watchtower.enable=true"
     networks:
       - app-network
