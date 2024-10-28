@@ -22,6 +22,13 @@ RUN mkdir -p uploads
 RUN useradd -m appuser && chown -R appuser:appuser /app
 USER appuser
 
+# Create database directory
+RUN mkdir -p instance && chown -R appuser:appuser instance
+
+# Initialize database
+ENV FLASK_APP=app.py
+RUN flask db upgrade
+
 # Expose port
 EXPOSE 5001
 
