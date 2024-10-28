@@ -39,10 +39,10 @@ services:
 
   backend:
     image: ghcr.io/man0l/tools:backend-latest  # Use the built backend image
-    deploy:
-      replicas: 2
     environment:
       - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+    env_file:
+      - .env
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.backend.rule=Host(`${DOMAIN}`)"
