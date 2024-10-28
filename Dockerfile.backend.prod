@@ -25,12 +25,12 @@ USER appuser
 # Create database directory
 RUN mkdir -p instance && chown -R appuser:appuser instance
 
-# Initialize database
-ENV FLASK_APP=app.py
-RUN flask db upgrade
+# Copy entrypoint script
+COPY docker-entrypoint.sh .
+RUN chmod +x docker-entrypoint.sh
 
 # Expose port
 EXPOSE 5001
 
-# Start Gunicorn
-CMD ["gunicorn", "--bind", "0.0.0.0:5001", "--workers", "4", "--threads", "2", "--timeout", "120", "--access-logfile", "-", "--error-logfile", "-", "app:app"]
+# Start using entrypoint script
+ENTRYPOINT ["./docker-entrypoint.sh"]
