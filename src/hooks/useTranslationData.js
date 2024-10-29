@@ -26,10 +26,15 @@ export const useTranslationData = () => {
     const fetchTranslations = async () => {
       if (selectedFile) {
         try {
-          const response = await api.get(`/translations/${selectedFile}?page=${currentPage + 1}&limit=${itemsPerPage}`);
+          const response = await api.get(`/translations/${selectedFile}`, {
+            params: {
+              page: currentPage + 1,
+              limit: itemsPerPage
+            }
+          });
           setTranslations(response.data.translations);
           setTotalTranslations(response.data.total);
-        } catch {
+        } catch (error) {
           toast.error('Failed to fetch translations');
         }
       }
