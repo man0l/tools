@@ -1,6 +1,7 @@
 from flask import jsonify, request
 from backend.models.translation_model import TranslationRecord
 from backend.models.file_model import db, File
+from backend.models.prompt_model import Prompt
 
 class TranslationHandler:
     def __init__(self, translator, text_extractor):
@@ -37,7 +38,7 @@ class TranslationHandler:
         if not file_record or file_record.user_id != user_id:
             return jsonify({'error': 'File not found or unauthorized'}), 403
 
-        translations = TranslationRecord.query.filter_by(file_id=file_id, user_id=user_id).all()
+        translations = TranslationRecord.query.filter_by(file_id=file_id, user_id=user_id).order_by(TranslationRecord.id).all()
         total_translations = TranslationRecord.query.filter_by(file_id=file_id, user_id=user_id).count()
 
         translation_list = [{
@@ -71,11 +72,20 @@ class TranslationHandler:
         if not translation_record or translation_record.user_id != user_id:
             return jsonify({'error': 'Translation record not found or unauthorized'}), 403
 
-        file_record = db.session.get(File, translation_record.file_id)
-        system_prompt = file_record.system_prompt
-        user_prompt = file_record.user_prompt
+        # Get the last translation prompt from the database
+        last_prompt = db.session.query(Prompt).filter_by(
+            prompt_type='translation'
+        ).order_by(Prompt.id.desc()).first()
 
-        translation_result = self.translator.translate(translation_record.extracted_text, system_prompt, user_prompt)
+        if not last_prompt:
+            return jsonify({'error': 'No translation prompt found'}), 400
+
+        translation_result = self.translator.translate(
+            translation_record.extracted_text,
+            last_prompt.system_message,
+            last_prompt.user_message
+        )
+        
         translated_text = translation_result['translation']
         translation_record.translated_text = translated_text
         db.session.commit()
