@@ -30,11 +30,15 @@ api.interceptors.response.use(
       const user = JSON.parse(localStorage.getItem('user'));
       if (user && user.refresh_token) {
         try {
+          const refreshUrl = isDevelopment
+            ? `http://${domain}:${backendPort}/auth/refresh`
+            : `/api/auth/refresh`;
+            
           const res = await axios.post(
-            `http://${process.env.DOMAIN || 'localhost'}:${backendPort}/auth/refresh`,
+            refreshUrl,
             {
                 refresh_token: user.refresh_token
-            },  // empty body
+            },
             {
               headers: {
                 'Authorization': `Bearer ${user.refresh_token}`
