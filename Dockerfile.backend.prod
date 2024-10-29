@@ -12,12 +12,11 @@ RUN apt-get update && apt-get install -y \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy entrypoint script and set permissions
-COPY docker-entrypoint.sh .
-RUN chmod +x docker-entrypoint.sh
-
-# Copy application code
+# Copy application code (excluding entrypoint script)
 COPY . .
+
+# Copy entrypoint script and ensure it has executable permissions
+COPY --chmod=755 docker-entrypoint.sh .
 
 # Create uploads directory
 RUN mkdir -p uploads
