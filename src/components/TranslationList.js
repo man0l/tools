@@ -86,7 +86,7 @@ const TranslationList = () => {
   const handleDownloadCSV = (rows) => {
     const selectedTranslations = rows.map(index => translations[index]);
     const csvHeader = "Edited Text\n";
-    const csvContent = selectedTranslations.map(t => `${t.edited_text}`).join("\n");
+    const csvContent = selectedTranslations.map(t => `${t.edited_text}`).join(";");
     const csvData = csvHeader + csvContent;
     const encodedUri = encodeURI("data:text/csv;charset=utf-8," + csvData);
     const link = document.createElement("a");
