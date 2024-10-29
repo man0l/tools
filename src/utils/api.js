@@ -2,10 +2,11 @@ import axios from 'axios';
 
 const backendPort = process.env.REACT_APP_BACKEND_PORT || 5000;
 const isDevelopment = process.env.NODE_ENV === 'development';
+const domain = process.env.REACT_APP_DOMAIN || 'localhost';
 
 const api = axios.create({
   baseURL: isDevelopment 
-    ? `http://localhost:${backendPort}`
+    ? `http://${domain}:${backendPort}`
     : `/api`,
 });
 

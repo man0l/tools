@@ -1,42 +1,17 @@
 version: '3.8'
 
 services:
-  traefik:
-    image: traefik:v2.10
-    command:
-      - "--api.insecure=true"
-      - "--providers.docker=true"
-      - "--providers.docker.exposedbydefault=false"
-      - "--entrypoints.web.address=:80"
-      - "--entrypoints.websecure.address=:443"
-      - "--certificatesresolvers.myresolver.acme.tlschallenge=true"
-      - "--certificatesresolvers.myresolver.acme.email=${EMAIL}"
-      - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
-      - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
-      - "--entrypoints.web.http.redirections.entryPoint.scheme=https"
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - "/var/run/docker.sock:/var/run/docker.sock:ro"
-      - "./letsencrypt:/letsencrypt"
-    networks:
-      - app-network
-    restart: unless-stopped
-
   frontend:
     build:
       context: .
       dockerfile: Dockerfile.frontend
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.frontend.rule=Host(`${DOMAIN}`) && !PathPrefix(`/api`)"
-      - "traefik.http.routers.frontend.entrypoints=websecure"
-      - "traefik.http.routers.frontend.tls.certresolver=myresolver"
-      - "traefik.http.services.frontend.loadbalancer.server.port=80"
+    volumes:
+      - .:/app
     networks:
       - app-network
     restart: unless-stopped
+    ports:
+      - "3000:3000"
 
   backend:
     build:
@@ -53,21 +28,18 @@ services:
       - TIMEOUT=120
     env_file:
       - .env
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.backend-api.rule=Host(`${DOMAIN}`) && PathPrefix(`/api`)"
-      - "traefik.http.routers.backend-api.middlewares=strip-api-prefix@docker"
-      - "traefik.http.services.backend.loadbalancer.server.port=5001"
     networks:
       - app-network
     depends_on:
       - postgres
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5001/health"]
+      test: ["CMD", "curl", "-f", "http://${DOMAIN}:5001/health"]
       interval: 30s
       timeout: 10s
       retries: 3
+    ports:
+      - "5001:5001"
 
   postgres:
     image: postgres:15-alpine
@@ -87,27 +59,14 @@ services:
       retries: 5
       start_period: 10s
 
-  watchtower:
-    image: containrrr/watchtower
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-    command: --interval 30 --cleanup
-    restart: unless-stopped
-
   pgadmin:
     image: dpage/pgadmin4
     environment:
-      - PGADMIN_DEFAULT_EMAIL=${PGADMIN_EMAIL}
-      - PGADMIN_DEFAULT_PASSWORD=${PGADMIN_PASSWORD}
+      - PGADMIN_DEFAULT_EMAIL=${EMAIL}
+      - PGADMIN_DEFAULT_PASSWORD=${POSTGRES_PASSWORD}
     volumes:
       - pgadmin_data:/var/lib/pgadmin
       - ./pgadmin/servers.json:/pgadmin4/servers.json
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.pgadmin.rule=Host(`pgadmin.${DOMAIN}`)"
-      - "traefik.http.routers.pgadmin.entrypoints=websecure"
-      - "traefik.http.routers.pgadmin.tls.certresolver=myresolver"
-      - "traefik.http.services.pgadmin.loadbalancer.server.port=80"
     networks:
       - app-network
     depends_on:
