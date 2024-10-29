@@ -99,7 +99,7 @@ const TranslationList = () => {
 
   const handleDownloadDOC = (rows) => {
     const selectedTranslations = rows.map(index => translations[index]);
-    const docContent = selectedTranslations.map(t => `Edited Text: ${t.edited_text}\n\n`).join("");
+    const docContent = selectedTranslations.map(t => `${t.edited_text}\n\n`).join("");
     const blob = new Blob([docContent], { type: "application/msword" });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
