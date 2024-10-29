@@ -28,7 +28,21 @@ from sqlalchemy import text
 load_dotenv()
 
 app = Flask(__name__)
-CORS(app, resources={r"/*": {"origins": "*"}})  # Allow all origins for development purposes
+
+if os.getenv('FLASK_ENV') == 'development':
+    CORS(app, resources={
+        r"/*": {
+            "origins": [
+                f"http://{os.getenv('DOMAIN')}:{os.getenv('REACT_APP_BACKEND_PORT')}",
+                f"http://{os.getenv('DOMAIN')}:3000",  # React development server
+                f"http://{os.getenv('DOMAIN')}"  # For production without port
+            ],
+            "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+            "allow_headers": ["Content-Type", "Authorization"]
+        }
+    })
+else:
+    CORS(app, resources={r"/*": {"origins": "https://tools.aiaccelerator.bg"}})  # Allow only the production origin
 
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
