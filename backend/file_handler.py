@@ -1,6 +1,7 @@
 from flask import request, jsonify
 from backend.models.file_model import db, File
 from backend.models.translation_model import TranslationRecord
+from hashlib import sha256
 
 class FileHandler:
     def __init__(self, file_uploader):
@@ -15,7 +16,10 @@ class FileHandler:
             return jsonify({'error': 'No selected file'}), 400
 
         if file and file.filename.endswith('.pdf'):
-            filehash = hash(file.read())
+            sha256_hash = sha256()
+            file_contents = file.read()
+            sha256_hash.update(file_contents)
+            filehash = sha256_hash.hexdigest()
             file.seek(0)
 
             existing_file = File.query.filter_by(filehash=filehash, user_id=user_id).first()

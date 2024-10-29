@@ -2,10 +2,11 @@ import axios from 'axios';
 
 const backendPort = process.env.REACT_APP_BACKEND_PORT || 5000;
 const isDevelopment = process.env.NODE_ENV === 'development';
+const domain = process.env.REACT_APP_DOMAIN || 'localhost';
 
 const api = axios.create({
   baseURL: isDevelopment 
-    ? `http://localhost:${backendPort}`
+    ? `http://${domain}:${backendPort}`
     : `/api`,
 });
 
@@ -29,11 +30,15 @@ api.interceptors.response.use(
       const user = JSON.parse(localStorage.getItem('user'));
       if (user && user.refresh_token) {
         try {
+          const refreshUrl = isDevelopment
+            ? `http://${domain}:${backendPort}/auth/refresh`
+            : `/api/auth/refresh`;
+            
           const res = await axios.post(
-            `http://${process.env.DOMAIN || 'localhost'}:${backendPort}/auth/refresh`,
+            refreshUrl,
             {
                 refresh_token: user.refresh_token
-            },  // empty body
+            },
             {
               headers: {
                 'Authorization': `Bearer ${user.refresh_token}`

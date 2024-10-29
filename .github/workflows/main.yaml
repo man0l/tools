@@ -15,6 +15,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         
+      - name: Set entrypoint script permissions
+        run: |
+          chmod +x docker-entrypoint.sh
+          ls -la docker-entrypoint.sh
+        
       - name: Set short git commit SHA
         id: vars
         run: |

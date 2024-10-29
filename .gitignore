@@ -9,3 +9,5 @@ storage.db
 build/
 dist/
 instance/
+letsencrypt/
+pgadmin/servers.json
