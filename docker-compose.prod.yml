@@ -61,6 +61,8 @@ services:
       - "traefik.http.middlewares.strip-api-prefix.stripprefix.prefixes=/api"
       - "traefik.http.routers.backend-api.middlewares=strip-api-prefix@docker"
       - "com.centurylinklabs.watchtower.enable=true"
+    volumes:
+      - ./uploads:/app/uploads
     networks:
       - app-network
     depends_on:
