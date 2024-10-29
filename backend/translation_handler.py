@@ -38,16 +38,22 @@ class TranslationHandler:
         if not file_record or file_record.user_id != user_id:
             return jsonify({'error': 'File not found or unauthorized'}), 403
 
-        # Get pagination parameters from request
-        page = request.args.get('page', 1, type=int)
-        limit = request.args.get('limit', 10, type=int)
-        offset = (page - 1) * limit
-
-        # Get paginated translations
-        translations = TranslationRecord.query.filter_by(
-            file_id=file_id, 
-            user_id=user_id
-        ).order_by(TranslationRecord.id).offset(offset).limit(limit).all()
+        download_all = request.args.get('download_all', False, type=bool)
+        
+        if download_all:
+            translations = TranslationRecord.query.filter_by(
+                file_id=file_id, 
+                user_id=user_id
+            ).order_by(TranslationRecord.id).all()
+        else:
+            page = request.args.get('page', 1, type=int)
+            limit = request.args.get('limit', 10, type=int)
+            offset = (page - 1) * limit
+    
+            translations = TranslationRecord.query.filter_by(
+                file_id=file_id, 
+                user_id=user_id
+            ).order_by(TranslationRecord.id).offset(offset).limit(limit).all()
 
         # Get total count for pagination
         total_translations = TranslationRecord.query.filter_by(

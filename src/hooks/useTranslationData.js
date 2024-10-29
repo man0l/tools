@@ -10,6 +10,32 @@ export const useTranslationData = () => {
   const [currentPage, setCurrentPage] = useState(0);
   const [itemsPerPage, setItemsPerPage] = useState(10);
 
+  const fetchTranslations = async (options = {}) => {
+    const { download_all = null } = options;
+    
+    if (selectedFile) {
+      try {
+        const response = await api.get(`/translations/${selectedFile}`, {
+          params: {
+            page: currentPage + 1,
+            limit: itemsPerPage,
+            download_all
+          }
+        });
+        
+        if (!download_all) {
+          setTranslations(response.data.translations);
+          setTotalTranslations(response.data.total);
+        }
+        
+        return response.data;
+      } catch (error) {
+        toast.error('Failed to fetch translations');
+        throw error;
+      }
+    }
+  };
+
   useEffect(() => {
     const fetchFiles = async () => {
       try {
@@ -23,22 +49,6 @@ export const useTranslationData = () => {
   }, []);
 
   useEffect(() => {
-    const fetchTranslations = async () => {
-      if (selectedFile) {
-        try {
-          const response = await api.get(`/translations/${selectedFile}`, {
-            params: {
-              page: currentPage + 1,
-              limit: itemsPerPage
-            }
-          });
-          setTranslations(response.data.translations);
-          setTotalTranslations(response.data.total);
-        } catch (error) {
-          toast.error('Failed to fetch translations');
-        }
-      }
-    };
     fetchTranslations();
   }, [selectedFile, currentPage, itemsPerPage]);
 
@@ -52,6 +62,7 @@ export const useTranslationData = () => {
     setCurrentPage,
     itemsPerPage,
     setItemsPerPage,
-    setTranslations
+    setTranslations,
+    fetchTranslations
   };
 };

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FaFileAlt, FaLanguage, FaEdit, FaChevronDown, FaChevronUp } from 'react-icons/fa';
 import Modal from 'react-modal';
 import './TranslationList.css';
@@ -22,7 +22,8 @@ const TranslationList = () => {
     setCurrentPage,
     itemsPerPage,
     setItemsPerPage,
-    setTranslations
+    setTranslations,
+    fetchTranslations
   } = useTranslationData();
 
   const [modalIsOpen, setModalIsOpen] = useState(false);
@@ -46,7 +47,8 @@ const TranslationList = () => {
 
   const handleSelectAll = (event) => {
     if (event.target.checked) {
-      setSelectedRows(translations.map((_, index) => index));
+      const currentPageIndexes = translations.map((_, index) => index);
+      setSelectedRows(currentPageIndexes);
     } else {
       setSelectedRows([]);
     }
@@ -60,27 +62,45 @@ const TranslationList = () => {
     );
   };
 
+  useEffect(() => {
+    setSelectedRows([]);
+  }, [currentPage]);
+
   const handleBulkAction = (action) => {
+    const selectedTranslations = selectedRows.map(index => translations[index]).filter(Boolean);
+    
     switch (action) {
       case 'extract':
-        selectedRows.forEach(index => handleExtract(index));
+        selectedTranslations.forEach(translation => {
+          if (translation && translation.id) {
+            handleExtract(translation);
+          }
+        });
         break;
       case 'translate':
-        selectedRows.forEach(index => handleTranslate(index));
+        selectedTranslations.forEach(translation => {
+          if (translation && translation.id) {
+            handleTranslate(translation);
+          }
+        });
         break;
       case 'edit':
-        selectedRows.forEach(index => handleEditAction(index));
+        selectedTranslations.forEach(translation => {
+          if (translation && translation.id) {
+            handleEditAction(translation);
+          }
+        });
         break;
       case 'download_csv':
-        handleDownloadCSV(selectedRows);
+        handleDownloadCSV(selectedTranslations);
         break;
       case 'download_doc':
-        handleDownloadDOC(selectedRows);
+        handleDownloadDOC(selectedTranslations);
         break;
       default:
         break;
     }
-    setBulkAction(''); // Reset the dropdown value
+    setBulkAction('');
   };
 
   const handleDownloadCSV = (rows) => {
@@ -109,12 +129,55 @@ const TranslationList = () => {
     document.body.removeChild(link);
   };
 
-  const handleDownloadCSVAll = () => {
-    handleDownloadCSV(translations.map((_, index) => index));
+  const handleDownloadCSVAll = async () => {
+    if (!selectedFile) {
+      toast.error('Please select a file first');
+      return;
+    }
+
+    try {
+      const { translations: allTranslations } = await fetchTranslations({ download_all: true });
+      const csvHeader = "Edited Text\n";
+      const csvContent = allTranslations.map(t => `${t.edited_text}`).join(";");
+      const csvData = csvHeader + csvContent;
+      const encodedUri = encodeURI("data:text/csv;charset=utf-8," + csvData);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", "edited_texts.csv");
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      toast.success('CSV downloaded successfully');
+    } catch (error) {
+      console.error('Error downloading CSV:', error);
+      toast.error('Failed to download CSV');
+    }
   };
 
-  const handleDownloadDOCAll = () => {
-    handleDownloadDOC(translations.map((_, index) => index));
+  const handleDownloadDOCAll = async () => {
+    if (!selectedFile) {
+      toast.error('Please select a file first');
+      return;
+    }
+
+    try {
+      const { translations: allTranslations } = await fetchTranslations({ download_all: true });
+      const docContent = allTranslations.map(t => `${t.edited_text}\n\n`).join('');
+      const blob = new Blob([docContent], { type: 'application/msword' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = 'all_translations.doc';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(link.href);
+      
+      toast.success('Document downloaded successfully');
+    } catch (error) {
+      console.error('Error downloading document:', error);
+      toast.error('Failed to download document');
+    }
   };
 
   const handleEdit = (index, field, value) => {
@@ -148,12 +211,14 @@ const TranslationList = () => {
     closeModal();
   };
 
-  const handleExtract = async (index) => {
-    const translationId = translations[index].id;
+  const handleExtract = async (translation) => {
     try {
-      const response = await api.post(`/perform_extraction/${translationId}`);
-      const updatedTranslations = [...translations];
-      updatedTranslations[index].extracted_text = response.data.extracted_text;
+      const response = await api.post(`/perform_extraction/${translation.id}`);
+      const updatedTranslations = translations.map(t => 
+        t.id === translation.id 
+          ? { ...t, extracted_text: response.data.extracted_text }
+          : t
+      );
       setTranslations(updatedTranslations);
       toast.success('Text extracted successfully');
     } catch (error) {
@@ -161,14 +226,16 @@ const TranslationList = () => {
     }
   };
 
-  const handleTranslate = async (index) => {
-    const translationId = translations[index].id;
+  const handleTranslate = async (translation) => {
     toast.info('Translation in progress...');
     
     try {
-      const response = await api.post(`/translate/${translationId}`);
-      const updatedTranslations = [...translations];
-      updatedTranslations[index].translated_text = response.data.translated_text;
+      const response = await api.post(`/translate/${translation.id}`);
+      const updatedTranslations = translations.map(t =>
+        t.id === translation.id
+          ? { ...t, translated_text: response.data.translated_text }
+          : t
+      );
       setTranslations(updatedTranslations);
       toast.success('Text translated successfully');
     } catch (error) {
@@ -176,15 +243,17 @@ const TranslationList = () => {
     }
   };
 
-  const handleEditAction = async (index) => {
-    const translationId = translations[index].id;
-    console.log('Editing translation with ID:', translationId);
+  const handleEditAction = async (translation) => {
+    console.log('Editing translation with ID:', translation.id);
     toast.info('Editing in progress...');
 
     try {
-      const response = await api.post(`/edit/${translationId}`);
-      const updatedTranslations = [...translations];
-      updatedTranslations[index].edited_text = response.data.edited_text;
+      const response = await api.post(`/edit/${translation.id}`);
+      const updatedTranslations = translations.map(t =>
+        t.id === translation.id
+          ? { ...t, edited_text: response.data.edited_text }
+          : t
+      );
       setTranslations(updatedTranslations);
       toast.success('Text edited successfully');
     } catch (error) {
@@ -250,7 +319,7 @@ const TranslationList = () => {
                   <input
                     type="checkbox"
                     onChange={handleSelectAll}
-                    checked={selectedRows.length === translations.length}
+                    checked={translations.length > 0 && selectedRows.length === translations.length}
                   />
                 </th>
                 <th className="py-2">Page Range</th>
@@ -285,9 +354,9 @@ const TranslationList = () => {
                       {(translation.edited_text || '').substring(0, 50)}...
                     </td>
                     <td className="border px-4 py-2">
-                      <button onClick={() => handleExtract(index)} className="mr-2"><FaFileAlt /></button>
-                      <button onClick={() => handleTranslate(index)} className="mr-2"><FaLanguage /></button>
-                      <button onClick={() => handleEditAction(index)}><FaEdit /></button>
+                      <button onClick={() => handleExtract(translation)} className="mr-2"><FaFileAlt /></button>
+                      <button onClick={() => handleTranslate(translation)} className="mr-2"><FaLanguage /></button>
+                      <button onClick={() => handleEditAction(translation)}><FaEdit /></button>
                     </td>
                   </tr>
                   <tr>
