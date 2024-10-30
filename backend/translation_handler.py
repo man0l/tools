@@ -2,6 +2,7 @@ from flask import jsonify, request
 from backend.models.translation_model import TranslationRecord
 from backend.models.file_model import db, File
 from backend.models.prompt_model import Prompt
+from backend.models.user_model import User
 
 class TranslationHandler:
     def __init__(self, translator, text_extractor):
@@ -92,6 +93,10 @@ class TranslationHandler:
         if not translation_record or translation_record.user_id != user_id:
             return jsonify({'error': 'Translation record not found or unauthorized'}), 403
 
+        # Get user's preferred model
+        user = db.session.get(User, user_id)
+        model = user.preferred_model if user else 'gpt-4o'
+
         # Get the last translation prompt from the database
         last_prompt = db.session.query(Prompt).filter_by(
             prompt_type='translation'
@@ -103,7 +108,8 @@ class TranslationHandler:
         translation_result = self.translator.translate(
             translation_record.extracted_text,
             last_prompt.system_message,
-            last_prompt.user_message
+            last_prompt.user_message,
+            model=model  # Pass the model to the translator
         )
         
         translated_text = translation_result['translation']

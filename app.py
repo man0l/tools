@@ -236,6 +236,30 @@ def not_found_error(error):
         'method': request.method
     }), 404
 
+@app.route('/user/settings', methods=['GET'])
+@jwt_required()
+def get_user_settings():
+    current_user_id = get_jwt_identity()
+    user = db.session.get(User, current_user_id)
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+    return jsonify({'preferred_model': user.preferred_model}), 200
+
+@app.route('/user/settings', methods=['POST'])
+@jwt_required()
+def update_user_settings():
+    current_user_id = get_jwt_identity()
+    user = db.session.get(User, current_user_id)
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+    
+    data = request.json
+    if 'preferred_model' in data:
+        user.preferred_model = data['preferred_model']
+        db.session.commit()
+        return jsonify({'message': 'Settings updated successfully'}), 200
+    return jsonify({'error': 'Invalid settings data'}), 400
+
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()

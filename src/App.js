@@ -15,6 +15,7 @@ import { AuthProvider } from './context/AuthContext';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import Settings from './components/Settings';
 
 function App() {
   return (
@@ -55,6 +56,11 @@ function App() {
               <Route path="/prompt-manager" element={
                 <PrivateRoute>
                   <PromptManager />
+                </PrivateRoute>
+              } />
+              <Route path="/settings" element={
+                <PrivateRoute>
+                  <Settings />
                 </PrivateRoute>
               } />
             </Routes>

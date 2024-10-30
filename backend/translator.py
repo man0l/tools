@@ -6,7 +6,7 @@ class Translator(OpenAIBase):
     def __init__(self, api_key):
         super().__init__(api_key)
 
-    def translate(self, text, system=None, user=None):
+    def translate(self, text, system=None, user=None, model=None):
         """Translate text to Bulgarian using OpenAI API."""
         try:
             # Fetch the last translation prompt from the database
@@ -15,7 +15,7 @@ class Translator(OpenAIBase):
             user_prompt = f"{user} {text}" if user else f"Text for translation: {text}. Translate the text and dont be lazy, translate the whole given text."
 
             response = self.create_completion(
-                model="gpt-4o",  # https://platform.openai.com/docs/models/gpt-4o
+                model=model or "gpt-4o",  # Use provided model or default to gpt-4o
                 messages=[
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_prompt},
