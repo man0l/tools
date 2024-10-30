@@ -8,6 +8,7 @@ import { Collapse } from 'react-collapse';
 import ReactPaginate from 'react-paginate';
 import { useTranslationData } from '../hooks/useTranslationData';
 import { api } from '../utils/api';
+import { useActionQueue } from '../hooks/useActionQueue';
 
 Modal.setAppElement('#root');
 
@@ -33,6 +34,14 @@ const TranslationList = () => {
   const [expandedRows, setExpandedRows] = useState({});
   const [selectedRows, setSelectedRows] = useState([]);
   const [bulkAction, setBulkAction] = useState('');
+
+  const {
+    queue,
+    addToQueue,
+    processQueue,
+    isProcessing,
+    clearQueue
+  } = useActionQueue();
 
   const handleFileChange = (event) => {
     const fileId = event.target.value;
@@ -71,25 +80,22 @@ const TranslationList = () => {
     
     switch (action) {
       case 'extract':
-        selectedTranslations.forEach(translation => {
-          if (translation && translation.id) {
-            handleExtract(translation);
-          }
-        });
+        addToQueue(selectedTranslations.map(translation => ({
+          action: 'extract',
+          translation
+        })));
         break;
       case 'translate':
-        selectedTranslations.forEach(translation => {
-          if (translation && translation.id) {
-            handleTranslate(translation);
-          }
-        });
+        addToQueue(selectedTranslations.map(translation => ({
+          action: 'translate',
+          translation
+        })));
         break;
       case 'edit':
-        selectedTranslations.forEach(translation => {
-          if (translation && translation.id) {
-            handleEditAction(translation);
-          }
-        });
+        addToQueue(selectedTranslations.map(translation => ({
+          action: 'edit',
+          translation
+        })));
         break;
       case 'download_csv':
         handleDownloadCSV(selectedTranslations);
@@ -214,11 +220,18 @@ const TranslationList = () => {
   const handleExtract = async (translation) => {
     try {
       const response = await api.post(`/perform_extraction/${translation.id}`);
-      const updatedTranslations = translations.map(t => 
-        t.id === translation.id 
-          ? { ...t, extracted_text: response.data.extracted_text }
-          : t
-      );
+      
+      // Find the index of the translation to update
+      const index = translations.findIndex(t => t.id === translation.id);
+      if (index === -1) return; // Translation not found
+      
+      // Create new array with only the necessary update
+      const updatedTranslations = [
+        ...translations.slice(0, index),
+        { ...translations[index], extracted_text: response.data.extracted_text },
+        ...translations.slice(index + 1)
+      ];
+      
       setTranslations(updatedTranslations);
       toast.success('Text extracted successfully');
     } catch (error) {
@@ -226,16 +239,22 @@ const TranslationList = () => {
     }
   };
 
-  const handleTranslate = async (translation) => {
-    toast.info('Translation in progress...');
+  const handleTranslate = async (translation) => {    
     
     try {
       const response = await api.post(`/translate/${translation.id}`);
-      const updatedTranslations = translations.map(t =>
-        t.id === translation.id
-          ? { ...t, translated_text: response.data.translated_text }
-          : t
-      );
+      
+      // Find the index of the translation to update
+      const index = translations.findIndex(t => t.id === translation.id);
+      if (index === -1) return; // Translation not found
+      
+      // Create new array with only the necessary update
+      const updatedTranslations = [
+        ...translations.slice(0, index),
+        { ...translations[index], translated_text: response.data.translated_text },
+        ...translations.slice(index + 1)
+      ];
+      
       setTranslations(updatedTranslations);
       toast.success('Text translated successfully');
     } catch (error) {
@@ -245,15 +264,21 @@ const TranslationList = () => {
 
   const handleEditAction = async (translation) => {
     console.log('Editing translation with ID:', translation.id);
-    toast.info('Editing in progress...');
 
     try {
       const response = await api.post(`/edit/${translation.id}`);
-      const updatedTranslations = translations.map(t =>
-        t.id === translation.id
-          ? { ...t, edited_text: response.data.edited_text }
-          : t
-      );
+      
+      // Find the index of the translation to update
+      const index = translations.findIndex(t => t.id === translation.id);
+      if (index === -1) return; // Translation not found
+      
+      // Create new array with only the necessary update
+      const updatedTranslations = [
+        ...translations.slice(0, index),
+        { ...translations[index], edited_text: response.data.edited_text },
+        ...translations.slice(index + 1)
+      ];
+      
       setTranslations(updatedTranslations);
       toast.success('Text edited successfully');
     } catch (error) {
@@ -272,6 +297,28 @@ const TranslationList = () => {
   const handlePageClick = (data) => {
     setCurrentPage(data.selected);
   };
+
+  useEffect(() => {
+    const processQueueItem = async (item) => {
+      switch (item.action) {
+        case 'extract':
+          await handleExtract(item.translation);
+          break;
+        case 'translate':
+          await handleTranslate(item.translation);
+          break;
+        case 'edit':
+          await handleEditAction(item.translation);
+          break;
+        default:
+          break;
+      }
+    };
+
+    if (queue.length > 0 && !isProcessing) {
+      processQueue(processQueueItem);
+    }
+  }, [queue, isProcessing]);
 
   return (
     <div className="translation-list mt-8">
@@ -301,6 +348,17 @@ const TranslationList = () => {
               </select>
               <div className="p-2">
                 Selected Rows: {selectedRows.length}
+                {queue.length > 0 && (
+                  <span className="ml-2">
+                    <span className="text-blue-500">(Queue: {queue.length} remaining)</span>
+                    <button 
+                      onClick={clearQueue}
+                      className="ml-2 text-red-500 hover:text-red-700 text-sm underline"
+                    >
+                      clear queue
+                    </button>
+                  </span>
+                )}
               </div>
             </>
           )}
