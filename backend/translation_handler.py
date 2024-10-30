@@ -112,12 +112,15 @@ class TranslationHandler:
             model=model,
             openai_api_key=user.openai_api_key if user.openai_api_key else None
         )
-        
-        translated_text = translation_result['translation']
-        translation_record.translated_text = translated_text
-        db.session.commit()
 
-        return jsonify({'message': 'Text translated successfully', 'translated_text': translated_text}), 200
+        if 'translation' in translation_result:
+            translated_text = translation_result['translation']
+            translation_record.translated_text = translated_text
+            db.session.commit()
+
+            return jsonify({'message': 'Text translated successfully', 'translated_text': translated_text}), 200
+        else:
+            return jsonify({'error': translation_result }), 500
 
     def edit_text(self, translation_id, edited_text, user_id):
         translation_record = db.session.get(TranslationRecord, translation_id)

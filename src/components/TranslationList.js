@@ -186,19 +186,18 @@ const TranslationList = () => {
     }
   };
 
-  const handleEdit = (index, field, value) => {
+  const handleEdit = async (index, field, value) => {
     const translationId = translations[index].id;
-    api.post(`/update-translation/${translationId}`, { [field]: value })
-      .then(response => {
-        const updatedTranslations = [...translations];
-        updatedTranslations[index][field] = response.data[field];
-        setTranslations(updatedTranslations);
-        toast.success('Text edited successfully');
-      })
-      .catch((error) => {
-        console.error('Error editing text:', error.message);
-        toast.error('Failed to edit the text by AI: ' + error.message);
-      });
+    try {
+      const response = await api.post(`/update-translation/${translationId}`, { [field]: value });
+      const updatedTranslations = [...translations];
+      updatedTranslations[index][field] = response.data[field];
+      setTranslations(updatedTranslations);
+      toast.success('Text edited successfully');
+    } catch (error) {
+      console.error('Error editing text:', error.message);
+      toast.error('Failed to edit the text by AI: ' + error.response.data.error);
+    }
   };
 
   const openModal = (index, field, value) => {
@@ -212,8 +211,8 @@ const TranslationList = () => {
     setModalIsOpen(false);
   };
 
-  const saveChanges = () => {
-    handleEdit(currentIndex, currentField, currentValue);
+  const saveChanges = async () => {
+    await handleEdit(currentIndex, currentField, currentValue);
     closeModal();
   };
 
@@ -258,7 +257,7 @@ const TranslationList = () => {
       setTranslations(updatedTranslations);
       toast.success('Text translated successfully');
     } catch (error) {
-      toast.error('Failed to translate text: ' + error.message);
+      toast.error('Failed to translate text: ' + error.response.data.error);
     }
   };
 
@@ -283,7 +282,7 @@ const TranslationList = () => {
       toast.success('Text edited successfully');
     } catch (error) {
       console.error('Error editing text:', error.message);
-      toast.error('Failed to edit the text by AI: ' + error.message);
+      toast.error('Failed to edit the text by AI: ' + error.response.data.error);
     }
   };
 

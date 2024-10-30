@@ -1,3 +1,4 @@
+import openai
 from backend.openai_base import OpenAIBase
 from backend.models.prompt_model import Prompt
 from backend.models.database import db
@@ -24,7 +25,11 @@ class Translator(OpenAIBase):
                     {"role": "user", "content": user_prompt},
                 ]
             )
-            translation = response.choices[0].message.content
-            return {"translation": translation, "usage": response.usage}
+
+            if isinstance(response, openai.types.chat.ChatCompletion):
+                translation = response.choices[0].message.content   
+                return {"translation": translation, "usage": response.usage}
+            else:
+                return response['error']
         except Exception as e:
             return str(e)

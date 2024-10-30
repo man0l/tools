@@ -1,3 +1,4 @@
+import openai
 from backend.openai_base import OpenAIBase
 from backend.models.prompt_model import Prompt
 from backend.models.file_model import db
@@ -24,7 +25,10 @@ class TextEditor(OpenAIBase):
                     {"role": "user", "content": user_prompt},
                 ]
             )
-            edited_text = response.choices[0].message.content
-            return {"edited_text": edited_text, "usage": response.usage}
+            if isinstance(response, openai.types.chat.ChatCompletion):
+                edited_text = response.choices[0].message.content
+                return {"edited_text": edited_text, "usage": response.usage}
+            else:
+                return response['error']
         except Exception as e:
-            return {"error": str(e), "edited_text": None}
+            return str(e)

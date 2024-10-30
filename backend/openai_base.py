@@ -13,9 +13,10 @@ class OpenAIBase:
                 messages=messages
             )
             return response
+        except openai.AuthenticationError as e:
+            return {"error": "Invalid OpenAI API key. Please check your API key in settings."}
         except Exception as e:
-            return str(e)
-
+            return {"error": str(e)}
     def set_api_key(self, api_key):
         openai.api_key = api_key
         self.api_key = api_key
