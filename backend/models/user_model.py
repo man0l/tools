@@ -9,6 +9,7 @@ class User(db.Model):
     password_hash = db.Column(db.String(255), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     preferred_model = db.Column(db.String(50), default='gpt-4o', nullable=False)
+    openai_api_key = db.Column(db.String(255))
 
     def set_password(self, password):
         self.password_hash = bcrypt.hash(password)

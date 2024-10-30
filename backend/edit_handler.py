@@ -1,7 +1,8 @@
 from flask import jsonify, request
 from backend.text_editor import TextEditor
 from backend.models.translation_model import TranslationRecord
-from backend.models.file_model import db
+from backend.models.database import db
+from backend.models.user_model import User
 
 class EditHandler:
     def __init__(self, text_editor: TextEditor):
@@ -15,10 +16,16 @@ class EditHandler:
         if not translation_record or translation_record.user_id != user_id:
             return jsonify({'error': 'Translation record not found or unauthorized'}), 403
 
+        user = db.session.get(User, user_id)
+        if not user:
+            return jsonify({'error': 'User not found'}), 404
+
         # Use TextEditor to perform editing operations
         try:
             edit_result = self.text_editor.edit_text(
-                text=translation_record.translated_text
+                text=translation_record.translated_text,
+                model=user.preferred_model if user.preferred_model else "gpt-4o",
+                openai_api_key=user.openai_api_key if user.openai_api_key else None
             )
             
             if isinstance(edit_result, str):

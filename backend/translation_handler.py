@@ -109,7 +109,8 @@ class TranslationHandler:
             translation_record.extracted_text,
             last_prompt.system_message,
             last_prompt.user_message,
-            model=model  # Pass the model to the translator
+            model=model,
+            openai_api_key=user.openai_api_key if user.openai_api_key else None
         )
         
         translated_text = translation_result['translation']

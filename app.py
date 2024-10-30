@@ -22,6 +22,7 @@ from backend.prompt_handler import PromptHandler
 from flask_jwt_extended import JWTManager, jwt_required, get_jwt_identity
 from datetime import timedelta
 from backend.auth_handler import auth_bp
+from backend.user_handler import user_bp
 import logging
 from sqlalchemy import text
 
@@ -74,7 +75,9 @@ prompt_handler = PromptHandler()
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# Register blueprints
 app.register_blueprint(auth_bp, url_prefix='/auth')
+app.register_blueprint(user_bp, url_prefix='/user')
 
 @app.route('/upload', methods=['POST'])
 @jwt_required()
@@ -235,30 +238,6 @@ def not_found_error(error):
         'path': request.path,
         'method': request.method
     }), 404
-
-@app.route('/user/settings', methods=['GET'])
-@jwt_required()
-def get_user_settings():
-    current_user_id = get_jwt_identity()
-    user = db.session.get(User, current_user_id)
-    if not user:
-        return jsonify({'error': 'User not found'}), 404
-    return jsonify({'preferred_model': user.preferred_model}), 200
-
-@app.route('/user/settings', methods=['POST'])
-@jwt_required()
-def update_user_settings():
-    current_user_id = get_jwt_identity()
-    user = db.session.get(User, current_user_id)
-    if not user:
-        return jsonify({'error': 'User not found'}), 404
-    
-    data = request.json
-    if 'preferred_model' in data:
-        user.preferred_model = data['preferred_model']
-        db.session.commit()
-        return jsonify({'message': 'Settings updated successfully'}), 200
-    return jsonify({'error': 'Invalid settings data'}), 400
 
 if __name__ == '__main__':
     with app.app_context():

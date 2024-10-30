@@ -55,7 +55,9 @@ const GPT_MODELS = [
 
 const Settings = () => {
   const [selectedModel, setSelectedModel] = useState(GPT_MODELS[0]);
+  const [apiKey, setApiKey] = useState('');
   const [hasChanges, setHasChanges] = useState(false);
+  const [validatingKey, setValidatingKey] = useState(false);
 
   useEffect(() => {
     fetchUserSettings();
@@ -64,9 +66,19 @@ const Settings = () => {
   const fetchUserSettings = async () => {
     try {
       const response = await api.get('/user/settings');
-      setSelectedModel(response.data.preferred_model);
+      setSelectedModel(GPT_MODELS.find(model => model.id === response.data.preferred_model) || GPT_MODELS[0]);
+      setApiKey(response.data.openai_api_key || '');
     } catch (error) {
       toast.error('Failed to fetch user settings');
+    }
+  };
+
+  const validateApiKey = async (key) => {
+    try {
+      const response = await api.post('/user/validate-api-key', { api_key: key });
+      return response.data.valid;
+    } catch (error) {
+      return false;
     }
   };
 
@@ -77,11 +89,30 @@ const Settings = () => {
     setHasChanges(true);
   };
 
+  const handleApiKeyChange = (event) => {
+    setApiKey(event.target.value);
+    setHasChanges(true);
+  };
+
   const handleSave = async () => {
+    if (apiKey) {
+      setValidatingKey(true);
+      const isValid = await validateApiKey(apiKey);
+      setValidatingKey(false);
+
+      if (!isValid) {
+        toast.error('Invalid OpenAI API key');
+        return;
+      }
+    }
+
     try {
-      await api.post('/user/settings', { preferred_model: selectedModel.id });
-      setHasChanges(false);
+      await api.post('/user/settings', {
+        preferred_model: selectedModel.id,
+        openai_api_key: apiKey
+      });
       toast.success('Settings saved successfully');
+      setHasChanges(false);
     } catch (error) {
       toast.error('Failed to save settings');
     }
@@ -89,18 +120,9 @@ const Settings = () => {
 
   return (
     <div className="settings-container">
-      <ToastContainer
-        position="top-right"
-        autoClose={3000}
-        hideProgressBar={false}
-        newestOnTop={false}
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-      />
+      <ToastContainer />
       <h2>Settings</h2>
+      
       <div className="setting-group">
         <label htmlFor="model-select">OpenAI Model</label>
         <select
@@ -116,12 +138,26 @@ const Settings = () => {
           ))}
         </select>
       </div>
+
+      <div className="setting-group">
+        <label htmlFor="api-key">OpenAI API Key</label>
+        <input
+          type="password"
+          id="api-key"
+          value={apiKey}
+          onChange={handleApiKeyChange}
+          className="api-key-input"
+          placeholder="sk-..."
+        />
+      </div>
+
       {hasChanges && (
         <button 
           onClick={handleSave}
           className="save-button"
+          disabled={validatingKey}
         >
-          Save Changes
+          {validatingKey ? 'Validating...' : 'Save Changes'}
         </button>
       )}
     </div>
