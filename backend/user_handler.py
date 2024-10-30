@@ -15,7 +15,8 @@ def get_user_settings():
         return jsonify({'error': 'User not found'}), 404
     return jsonify({
         'preferred_model': user.preferred_model,
-        'openai_api_key': user.openai_api_key
+        'openai_api_key': user.openai_api_key,
+        'force_ocr': user.force_ocr
     }), 200
 
 @user_bp.route('/settings', methods=['POST'])
@@ -31,6 +32,8 @@ def update_user_settings():
         user.preferred_model = data['preferred_model']
     if 'openai_api_key' in data:
         user.openai_api_key = data['openai_api_key']
+    if 'force_ocr' in data:
+        user.force_ocr = data['force_ocr']
     
     db.session.commit()
     return jsonify({'message': 'Settings updated successfully'}), 200

@@ -81,8 +81,9 @@ class TranslationHandler:
             return jsonify({'error': 'Translation record not found or unauthorized'}), 403
 
         file_record = db.session.get(File, translation_record.file_id)
+        user = db.session.get(User, user_id)
         start_page, end_page = map(int, translation_record.page_range.split('-'))
-        extracted_text = self.text_extractor.extract_text(file_record.file_path, start_page, end_page)
+        extracted_text = self.text_extractor.extract_text(file_record.file_path, start_page, end_page, user)
         translation_record.extracted_text = extracted_text
         db.session.commit()
 

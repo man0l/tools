@@ -181,9 +181,10 @@ def extract_text():
     end_page = int(request.form.get('endPage', start_page + 1)) - 1
 
     filepath = file_uploader.save_file(file)
+    user = db.session.get(User, get_jwt_identity())
 
     try:
-        extracted_text = text_extractor.extract_text(filepath, start_page, end_page)
+        extracted_text = text_extractor.extract_text(filepath, start_page, end_page, user)
         tokenized_text = tokenizer.tokenize(extracted_text)
         if extracted_text:
             return jsonify({'extractedText': extracted_text, 'numTokens': len(tokenized_text), 'maxTokens': tokenizer.max_tokens }), 200

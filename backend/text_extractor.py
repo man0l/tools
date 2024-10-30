@@ -5,7 +5,7 @@ import pytesseract
 import os
 
 class TextExtractor:
-    def extract_text(self, filepath, start_page, end_page):
+    def extract_text(self, filepath, start_page, end_page, user=None):
         """Extract text from a PDF file using PyMuPDF and OCR if necessary."""
         try:
             doc = fitz.open(filepath)  # Open the PDF with PyMuPDF
@@ -13,8 +13,8 @@ class TextExtractor:
             start_page = max(0, start_page)
             end_page = min(end_page, doc.page_count - 1)
             
-            # Check if OCR is forced via environment variable
-            force_ocr = os.getenv('FORCE_OCR', '').lower() == 'true'
+            # Check if OCR is forced via user settings or environment variable
+            force_ocr = (user and user.force_ocr) or os.getenv('FORCE_OCR', '').lower() == 'true'
 
             for page_num in range(start_page, end_page + 1):
                 page = doc.load_page(page_num)

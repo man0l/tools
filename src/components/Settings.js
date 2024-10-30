@@ -58,6 +58,7 @@ const Settings = () => {
   const [apiKey, setApiKey] = useState('');
   const [hasChanges, setHasChanges] = useState(false);
   const [validatingKey, setValidatingKey] = useState(false);
+  const [forceOcr, setForceOcr] = useState(false);
 
   useEffect(() => {
     fetchUserSettings();
@@ -68,6 +69,7 @@ const Settings = () => {
       const response = await api.get('/user/settings');
       setSelectedModel(GPT_MODELS.find(model => model.id === response.data.preferred_model) || GPT_MODELS[0]);
       setApiKey(response.data.openai_api_key || '');
+      setForceOcr(response.data.force_ocr || false);
     } catch (error) {
       toast.error('Failed to fetch user settings');
     }
@@ -94,6 +96,11 @@ const Settings = () => {
     setHasChanges(true);
   };
 
+  const handleForceOcrChange = (event) => {
+    setForceOcr(event.target.checked);
+    setHasChanges(true);
+  };
+
   const handleSave = async () => {
     if (apiKey) {
       setValidatingKey(true);
@@ -109,7 +116,8 @@ const Settings = () => {
     try {
       await api.post('/user/settings', {
         preferred_model: selectedModel.id,
-        openai_api_key: apiKey
+        openai_api_key: apiKey,
+        force_ocr: forceOcr
       });
       toast.success('Settings saved successfully');
       setHasChanges(false);
@@ -149,6 +157,26 @@ const Settings = () => {
           className="api-key-input"
           placeholder="sk-..."
         />
+      </div>
+
+      <div className="setting-group">
+        <div className="setting-header">
+          <label htmlFor="force-ocr">Force Optical Character Recognition (OCR)</label>
+          <div className="help-text">
+            When enabled, the system will always use OCR to extract text from PDFs, even if they contain selectable text. 
+            This can be helpful for PDFs with mixed content or when the default text extraction produces poor results.
+          </div>
+        </div>
+        <div className="toggle-switch">
+          <input
+            type="checkbox"
+            id="force-ocr"
+            checked={forceOcr}
+            onChange={handleForceOcrChange}
+            className="toggle-input"
+          />
+          <label htmlFor="force-ocr" className="toggle-label"></label>
+        </div>
       </div>
 
       {hasChanges && (
